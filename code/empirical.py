@@ -19,7 +19,7 @@ RES.mkdir(exist_ok=True)
 # Main WDI/UNDP panel, 1996-2025
 BASE_CONTROLS = ["lp_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep_l1",
                  "urb_l1", "dlp_l1", "mobile_l1", "broadband_l1"]
-# Penn World Table 10.0 panel, 1996-2019 (robustness; the only source with capital and TFP)
+# Penn World Table panels (11.0: 1996-2023; 10.0: 1996-2019); the only source with capital and TFP
 PWT_CONTROLS = ["lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1",
                 "labsh_l1", "dlp_l1", "mobile_l1", "broadband_l1"]
 
@@ -93,6 +93,7 @@ def summarise(m, name, grid):
 def main():
     df = pd.read_csv(ROOT / "data" / "processed" / "panel.csv")
     pwt = pd.read_csv(ROOT / "data" / "processed" / "panel_pwt.csv")
+    pwt11 = pd.read_csv(ROOT / "data" / "processed" / "panel_pwt11.csv")
     out, curves = [], {}
 
     # ---------------- descriptive statistics
@@ -153,11 +154,13 @@ def main():
               + ["internet_l1"])),
         ("No Mundlak means", df, dict(mundlak=False)),
     ]
-    same = df[df["iso"].isin(pwt["iso"].unique()) & (df["year"] <= 2019)]
+    same = df[df["iso"].isin(pwt11["iso"].unique()) & (df["year"] <= 2023)]
     pwt_specs = [
-        ("WDI data, PWT countries, 1996-2019", same, {}),
+        ("WDI data, PWT 11.0 countries, 1996-2023", same, {}),
+        ("PWT 11.0 sample, 1996-2023", pwt11, dict(controls=PWT_CONTROLS)),
+        ("PWT 11.0, 1996-2019", pwt11[pwt11["year"] <= 2019], dict(controls=PWT_CONTROLS)),
         ("PWT 10.0 sample, 1996-2019", pwt, dict(controls=PWT_CONTROLS)),
-        ("PWT 10.0: outcome TFP growth", pwt.dropna(subset=["dtfp"]),
+        ("PWT 11.0: outcome TFP growth", pwt11.dropna(subset=["dtfp"]),
          dict(y="dtfp", controls=pwt_no_lag)),
     ]
     for name, data, kw in common[:3] + hc_only + common[3:] + pwt_specs:

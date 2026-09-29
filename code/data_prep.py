@@ -6,9 +6,11 @@ Main panel (data/processed/panel.csv), 1996-2025
   series, expenditure shares, demography.
 * UNDP Human Development Report 2025: mean years of schooling (1990-2023).
 
-PWT panel (data/processed/panel_pwt.csv), 1996-2019, used for robustness
-* Penn World Table 10.0 (Feenstra, Inklaar and Timmer, 2015): output, employment,
-  capital, human capital, TFP and expenditure shares.
+PWT panels, used for robustness
+* data/processed/panel_pwt11.csv: Penn World Table 11.0, 1996-2023
+* data/processed/panel_pwt.csv:   Penn World Table 10.0, 1996-2019
+  (Feenstra, Inklaar and Timmer, 2015): output, employment, capital, human capital,
+  TFP and expenditure shares.
 * ITU / World Bank digital-adoption series distributed by Our World in Data.
 """
 from pathlib import Path
@@ -22,6 +24,7 @@ OUT = ROOT / "data" / "processed"
 OUT.mkdir(parents=True, exist_ok=True)
 
 START, END = 1996, 2019          # PWT 10.0 ends in 2019
+END_PWT11 = 2023                 # PWT 11.0 ends in 2023
 WDI_END = 2025
 
 
@@ -31,8 +34,15 @@ def load_owid(name, col):
     return df.rename(columns={"Code": "iso", "Year": "year", df.columns[3]: col})[["iso", "year", col]]
 
 
-def build_pwt():
-    pwt = pd.read_excel(RAW / "pwt100.xlsx", sheet_name="Data")
+def fill_pre_rollout(df):
+    """Before a country's first reported broadband figure the service did not exist: set to zero."""
+    first = df[df["broadband"].notna()].groupby("iso")["year"].min()
+    pre = df["year"] < df["iso"].map(first).fillna(9999)
+    df.loc[pre & df["broadband"].isna(), "broadband"] = 0.0
+
+
+def build_pwt(fname="pwt100.xlsx", end=END, out="panel_pwt.csv"):
+    pwt = pd.read_excel(RAW / fname, sheet_name="Data")
     pwt = pwt.rename(columns={"countrycode": "iso"})
     keep = ["iso", "country", "year", "rgdpna", "emp", "pop", "hc", "rnna", "rtfpna",
             "csh_i", "csh_g", "csh_x", "csh_m", "labsh"]
@@ -44,8 +54,8 @@ def build_pwt():
 
     df = pwt.merge(net, on=["iso", "year"], how="left")
     df = df.merge(mob, on=["iso", "year"], how="left").merge(bb, on=["iso", "year"], how="left")
-    # Before broadband roll-out the ITU series is missing rather than zero.
-    df.loc[df["year"] < 2000, "broadband"] = df.loc[df["year"] < 2000, "broadband"].fillna(0.0)
+    df = df.sort_values(["iso", "year"]).reset_index(drop=True)
+    fill_pre_rollout(df)
 
     g = df.groupby("iso", group_keys=False)
     df["lp"] = np.log(df["rgdpna"] / df["emp"])
@@ -68,7 +78,7 @@ def build_pwt():
     cols = ["iso", "country", "year", "dlp", "dtfp", "dkl", "internet_l1", "internet_l2",
             "mobile_l1", "broadband_l1", "lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1",
             "open_l1", "dpop_l1", "labsh_l1", "dlp_l1"]
-    panel = df[(df["year"] >= START) & (df["year"] <= END)][cols].dropna(
+    panel = df[(df["year"] >= START) & (df["year"] <= end)][cols].dropna(
         subset=[c for c in cols if c != "dtfp"])
     # Trim extreme growth episodes (wars, commodity collapses) at the 1st/99th percentiles.
     lo, hi = panel["dlp"].quantile([0.01, 0.99])
@@ -76,7 +86,7 @@ def build_pwt():
     # Keep countries with at least 15 usable years so fixed effects are well identified.
     n = panel.groupby("iso")["year"].transform("size")
     panel = panel[n >= 15].reset_index(drop=True)
-    panel.to_csv(OUT / "panel_pwt.csv", index=False)
+    panel.to_csv(OUT / out, index=False)
     return panel
 
 
@@ -108,10 +118,7 @@ def build_wdi():
     df = df.merge(load_mys(), on=["iso", "year"], how="left")
     df = df.merge(meta[["iso", "country", "income"]], on="iso", how="left")
     df = df.sort_values(["iso", "year"]).reset_index(drop=True)
-    # Before a country's first reported broadband figure the service did not exist: set to zero.
-    first = df[df["broadband"].notna()].groupby("iso")["year"].min()
-    pre = df["year"] < df["iso"].map(first).fillna(9999)
-    df.loc[pre & df["broadband"].isna(), "broadband"] = 0.0
+    fill_pre_rollout(df)
 
     g = df.groupby("iso", group_keys=False)
     df["lp"] = np.log(df["gdp_per_worker"])
@@ -143,7 +150,9 @@ def build_wdi():
 
 if __name__ == "__main__":
     q = build_pwt()
-    print("PWT panel", q.shape, q["iso"].nunique(), "countries", q["year"].min(), q["year"].max())
+    print("PWT 10.0 panel", q.shape, q["iso"].nunique(), "countries", q["year"].min(), q["year"].max())
+    q = build_pwt("pwt110.xlsx", END_PWT11, "panel_pwt11.csv")
+    print("PWT 11.0 panel", q.shape, q["iso"].nunique(), "countries", q["year"].min(), q["year"].max())
     p = build_wdi()
     print(p.shape, p["iso"].nunique(), "countries", p["year"].min(), p["year"].max())
     print(p.describe().T.round(3))
