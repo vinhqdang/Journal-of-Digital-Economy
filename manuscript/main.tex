@@ -1,0 +1,554 @@
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{setspace}
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{bm}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\M}{\mathcal{M}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\journal{Journal of Digital Economy}
+
+\begin{document}
+\doublespacing
+
+\begin{frontmatter}
+
+\title{Where does the digital dividend arrive? A debiased machine-learning sieve estimator for heterogeneous effects of digital adoption in panel data}
+
+\author{Quang-Vinh Dang\corref{cor1}}
+\ead{vinh.dq4@buv.edu.vn}
+\cortext[cor1]{Corresponding author. ORCID: 0000-0002-3877-8024.}
+\affiliation{organization={British University Vietnam},
+            city={Hung Yen},
+            country={Vietnam}}
+
+\begin{abstract}
+Whether digital adoption raises productivity is usually assessed with two-way fixed-effects regressions that impose a single, linear effect and a linear control function. Both restrictions are at odds with theories in which the returns to digital technologies depend on absorptive capacity and distance to the technological frontier. This paper develops Panel-DOSE, a debiased orthogonal sieve estimator for panel data that recovers the whole function linking the effect of a continuous digital treatment to a moderating variable. The estimator combines Mundlak-augmented machine-learning nuisance functions cross-fitted by country, a two-way within transformation of the orthogonalised residuals, and a penalised B-spline sieve whose smoothness is chosen by generalised cross-validation. It delivers pointwise and simultaneous confidence bands, group-average effects and a one-degree-of-freedom test of heterogeneity. We show that the estimating equation is Neyman-orthogonal and exactly invariant to additive unit and time errors in the nuisance functions, and that, when the moderator is a control variable, only two nuisance functions are needed whatever the sieve dimension. In Monte Carlo experiments with nonlinear confounding, Panel-DOSE attains the lowest integrated error in every non-constant design, reducing it by 60--80\% relative to linear fixed-effects models and boosted R-learners. Applied to 110 countries over 1996--2019, the estimator finds that the association between internet adoption and subsequent labour-productivity growth is negative on average and concentrated among economies far from the productivity frontier, while it is close to zero near the frontier. The evidence is consistent with a productivity J-curve in which the digital dividend arrives only once complementary capabilities are in place.
+\end{abstract}
+
+\begin{keyword}
+Digital adoption \sep Labor productivity \sep Double machine learning \sep Heterogeneous treatment effects \sep Panel data \sep Varying-coefficient model
+\JEL C14 \sep C23 \sep C55 \sep O33 \sep O47
+\end{keyword}
+
+\end{frontmatter}
+
+%% ===========================================================================
+\section{Introduction}\label{sec:intro}
+
+The expectation that digital technologies deliver a ``digital dividend'' in the form of faster productivity growth is central to development strategies and to much of the digital-economy literature \citep{worldbank2016wdr,goldfarb2019digital}. The empirical record is more mixed than this expectation suggests. Firm- and industry-level studies document large returns to information technology, but mainly where it is combined with organisational change and skilled labour \citep{brynjolfsson2000beyond,bresnahan2002it}. Cross-country evidence ranges from sizeable growth effects of broadband diffusion in advanced economies \citep{czernich2011broadband} to weak or insignificant effects in developing and emerging economies \citep{niebel2018ict,vu2020ict}. Recent contributions to this journal likewise emphasise that the economic consequences of digitalisation depend on structural and institutional conditions \citep{banga2026digitalisation,chen2026production}.
+
+A common thread in these findings is heterogeneity. Classic growth theory predicts that the payoff from a new technology depends on the capacity to absorb it, whether this is captured by human capital \citep{nelson1966,benhabib1994,cohen1990absorptive} or by distance to the technological frontier \citep{acemoglu2006frontier,comin2010diffusion}. The productivity J-curve of \citet{brynjolfsson2021jcurve} adds that general-purpose technologies such as the internet require complementary intangible investment that depresses measured productivity before raising it. Taken together, these arguments imply that the effect of digital adoption is a \emph{function} of the adopting economy's characteristics, possibly non-monotone and possibly negative over part of its domain.
+
+The standard empirical toolkit is poorly suited to estimating such a function. Two-way fixed-effects (TWFE) regressions deliver one number and, when heterogeneity is modelled at all, do so through a linear interaction term. They also specify the control function linearly, although the determinants of both productivity growth and digital adoption---income, capital deepening, demography, openness---interact nonlinearly. When the control function is misspecified and correlated with adoption, the resulting bias contaminates the average effect and, more seriously, its apparent heterogeneity. Double/debiased machine learning \citep[DML;][]{chernozhukov2018dml} addresses the control-function problem, and its panel extensions \citep{clarke2023panel} deal with fixed effects, but they target a constant parameter. Methods for heterogeneous effects, such as causal forests and the R-learner \citep{wager2018forest,athey2019grf,nie2021quasi}, have been developed for cross-sectional data with binary treatments; they do not exploit the within-country variation that identifies effects in macro panels and they provide limited inference on the shape of the effect function.
+
+This paper proposes an estimator that fills this gap. Panel-DOSE (\emph{Panel Debiased Orthogonal Sieve Estimator}) targets the varying-coefficient model
+\begin{equation}
+Y_{it} = \theta(Z_{it})\,D_{it} + g(X_{it}) + \alpha_i + \lambda_t + \varepsilon_{it},
+\label{eq:model}
+\end{equation}
+in which $D_{it}$ is a continuous digital-adoption measure, $Z_{it}$ is a moderator such as human capital or initial productivity, $g(\cdot)$ is an unknown control function and $(\alpha_i,\lambda_t)$ are country and year effects. The effect function $\theta(\cdot)$ is approximated by a penalised cubic B-spline sieve \citep{eilers1996}, and the sieve coefficients are estimated from a Neyman-orthogonal moment built on machine-learning residuals. The estimator has four ingredients. First, the nuisance learners are fed Mundlak (time-average) features, which absorb the part of the fixed effect that is correlated with observables \citep{mundlak1978,wooldridge2010}. Second, the nuisance functions are cross-fitted with folds formed by countries, so that no country's outcome is used to predict itself. Third, the cross-fitted residuals are two-way demeaned, which makes the moment exactly invariant to any additive country or year error in the machine-learning fits. Fourth, the smoothness of $\theta(\cdot)$ is chosen by generalised cross-validation, and inference relies on a cluster-robust sandwich, simultaneous (sup-$t$) bands \citep{montiel2019bands}, group-average effects and a best-linear-projection test of heterogeneity \citep{semenova2021cate}.
+
+The paper makes three contributions. The first is methodological. We extend orthogonal sieve estimation of causal functions \citep{semenova2021cate} to fixed-effects panels with a continuous treatment, prove that the resulting moment is Neyman-orthogonal and invariant to additive nuisance errors, and establish asymptotic normality under conditions that are standard for DML with clustered data. We also show a computational property that is specific to the moderator being a control variable: all orthogonalised regressors can be generated from two nuisance functions, $\E[Y\mid\cdot]$ and $\E[D\mid\cdot]$, so the cost of the estimator does not grow with the sieve dimension and alternative sieves can be compared at no additional cost.
+
+The second contribution is evidence on finite-sample performance. In a Monte Carlo study calibrated to a macro panel of 100 countries observed for 24 years, with fixed-effect and nonlinear confounding, Panel-DOSE attains the lowest integrated root-mean-squared error in all designs with a non-constant effect. It improves markedly on TWFE with linear interactions, on constant-effect panel DML, on a boosted R-learner applied to the same orthogonalised residuals, and on a pooled DML sieve that ignores the panel structure. The ablation shows that the fixed-effects treatment of the nuisance step, rather than machine learning per se, is responsible for most of the gain.
+
+The third contribution is substantive. We apply the estimator to 110 economies from the Penn World Table \citep{feenstra2015pwt} over 1996--2019, linking lagged internet adoption to labour-productivity growth. Conditional on flexible controls, the average association is negative, which is in line with the literature on the productivity paradox and J-curve \citep{brynjolfsson2021jcurve,syverson2017mismeasurement}. The average hides a clear gradient: the effect is strongly negative in the least productive third of country-years and statistically indistinguishable from zero in the most productive third. The gradient along human capital has the same sign but is estimated imprecisely. Linear TWFE finds a similar average but reports standard errors roughly half as large as those of the debiased estimators and misses the gradient along development. The results suggest that the digital dividend is not automatic and arrives only where complementary capabilities are already present.
+
+The remainder of the paper is organised as follows. Section~\ref{sec:lit} reviews the related literature. Section~\ref{sec:method} presents the model, the Panel-DOSE algorithm and its properties. Section~\ref{sec:sim} reports the Monte Carlo evidence. Section~\ref{sec:emp} presents the empirical application, Section~\ref{sec:disc} discusses implications and limitations, and Section~\ref{sec:concl} concludes. Proofs are collected in \ref{app:proofs} and data and implementation details in \ref{app:data}.
+
+%% ===========================================================================
+\section{Related literature}\label{sec:lit}
+
+\subsection{Digital adoption, absorptive capacity and productivity}
+
+Growth accounting attributes a large share of the US productivity resurgence of the late 1990s to the production and use of information technology \citep{jorgenson2008retro}. Outside the frontier, evidence on the productivity effects of digital technologies is less conclusive. \citet{czernich2011broadband} use an instrumental-variable approach based on pre-existing telecommunication networks and find that a ten-percentage-point increase in broadband penetration raised annual per-capita growth by 0.9--1.5 percentage points in OECD countries. \citet{niebel2018ict} finds that the output elasticity of ICT capital does not differ significantly between developing, emerging and developed economies, and that emerging and developing economies do not gain more from ICT investment than developed ones. \citet{vu2020ict} survey more than a hundred studies and conclude that the growth effect of ICT is positive on average but heterogeneous across countries, periods and technologies. Micro evidence points in the same direction: \citet{hjort2019internet} show that the arrival of fast internet in Africa increased employment, particularly in skilled occupations.
+
+Several theories predict this heterogeneity. In \citet{nelson1966} and \citet{benhabib1994}, human capital governs the speed at which economies adopt and exploit new technologies; in the organisational literature, absorptive capacity plays the same role at the firm level \citep{cohen1990absorptive}. In \citet{acemoglu2006frontier}, the optimal growth strategy changes with distance to the frontier, so the same technology can have different returns at different stages of development. \citet{comin2010diffusion} document that adoption lags vary widely across countries and technologies, implying that the intensity of use, not just availability, determines the gains. \citet{brynjolfsson2021jcurve} formalise the J-curve: because general-purpose technologies need complementary intangible investment that is poorly measured, measured productivity growth first falls and then rises as the technology spreads. Measurement concerns have also been raised as an explanation for the post-2005 productivity slowdown, although \citet{syverson2017mismeasurement} and \citet{byrne2016mismeasurement} find that mismeasurement accounts for only a small part of it.
+
+Empirically, heterogeneity is usually handled through sample splits by income group \citep{niebel2018ict}, linear interaction terms, or threshold regressions \citep{hansen1999threshold}. Sample splits are coarse and interactions impose linearity; threshold models impose a step function and are typically combined with linear controls. None of these approaches accommodates a flexible control function, and inference on the shape of the effect is usually limited to the coefficients of the chosen parametric form. Recent machine-learning contributions to this journal, for example on corporate carbon emissions \citep{xu2026carbon}, use flexible learners for prediction rather than for estimating causal or structural effects.
+
+\subsection{Machine learning for causal and structural parameters}
+
+Machine learning has become part of the applied econometrician's toolkit \citep{mullainathan2017ml,athey2019ml}. DML \citep{chernozhukov2018dml} generalises the partialling-out estimator of \citet{robinson1988}: it estimates the nuisance functions with any sufficiently accurate learner, uses cross-fitting to avoid overfitting bias and bases inference on a Neyman-orthogonal score that is insensitive to first-order errors in the nuisance estimates. \citet{clarke2023panel} adapt DML to static panels with fixed effects and compare correlated-random-effects, within-group and first-difference implementations. Their target is a constant coefficient.
+
+Heterogeneous effects have been studied mainly in cross-sectional settings with binary treatments. Causal forests \citep{wager2018forest,athey2019grf} adapt random forests to estimate conditional average treatment effects; the R-learner of \citet{nie2021quasi} minimises a residual-on-residual loss with a flexible function class. \citet{semenova2021cate} show that projecting an orthogonal signal onto a growing series basis yields asymptotically normal estimates of causal functions and their best linear predictors. Varying-coefficient models \citep{hastie1993vc,cai2000fc} are the classical semiparametric counterpart, estimated by kernel or spline methods under parametric control functions. Series estimation theory \citep{chen2007sieve,belloni2015series} supplies the pointwise and uniform asymptotics for such sieves.
+
+Panel-DOSE sits at the intersection of these strands. Relative to \citet{clarke2023panel}, it targets a function rather than a scalar and combines the correlated-random-effects and within-group strategies instead of choosing between them. Relative to \citet{semenova2021cate} and \citet{nie2021quasi}, it handles two-way fixed effects, cluster dependence and a continuous treatment, and exploits a structure-aware residualisation that keeps the cost independent of the sieve dimension. Relative to varying-coefficient and threshold models, it does not require the control function to be linear.
+
+%% ===========================================================================
+\section{Methodology}\label{sec:method}
+
+\subsection{Model and target parameters}
+
+We observe a panel $\{(Y_{it},D_{it},X_{it}) : i=1,\dots,G;\ t=1,\dots,T_i\}$ of $G$ countries, where $Y_{it}$ is an outcome (productivity growth), $D_{it}\in\mathbb{R}$ is a continuous digital-adoption measure, and $X_{it}\in\mathbb{R}^p$ collects controls that contains the moderator $Z_{it}$. We work with model~\eqref{eq:model}. The function $\theta(z)$ is the marginal effect of adoption on the outcome for an economy with moderator value $z$: a one-unit increase in $D$ changes $Y$ by $\theta(z)$, holding the controls and fixed effects constant. We also consider a dose-response variant,
+\begin{equation}
+Y_{it} = f(D_{it}) + g(X_{it}) + \alpha_i + \lambda_t + \varepsilon_{it},
+\label{eq:dose}
+\end{equation}
+whose target is the marginal effect $f'(d)$, which tells whether the returns to adoption diminish or rise with the level of adoption itself.
+
+Three summaries of $\theta(\cdot)$ are useful in practice. The \emph{average effect} is $\bar\theta=\E[\theta(Z_{it})]$. The \emph{group-average effect} for a set $A$ of moderator values is $\bar\theta_A=\E[\theta(Z_{it})\mid Z_{it}\in A]$; we use the terciles of $Z$. The \emph{best linear projection} (BLP) slope $\gamma$ solves $\min_{a,\gamma}\E[(\theta(Z_{it})-a-\gamma Z_{it})^2]$ and gives a one-degree-of-freedom summary of how the effect changes with the moderator \citep{semenova2021cate}.
+
+\subsection{Identification}
+
+Write $F_{it}=(X_{it},\bar X_i,\bar D_i,t)$ for the controls augmented by their country averages $\bar X_i=T_i^{-1}\sum_t X_{it}$ and $\bar D_i=T_i^{-1}\sum_t D_{it}$, and a time index.
+
+\begin{assumption}[Conditional strict exogeneity]\label{as:exo}
+$\E[\varepsilon_{it}\mid D_{i1},\dots,D_{iT_i},X_{i1},\dots,X_{iT_i},\alpha_i]=0$ for all $t$.
+\end{assumption}
+
+\begin{assumption}[Correlated random effects in the nuisance step]\label{as:cre}
+$\E[\alpha_i\mid F_{it}]=h(\bar X_i,\bar D_i)$ for some function $h$ that does not depend on $t$.
+\end{assumption}
+
+\begin{assumption}[Nuisance sufficiency]\label{as:suff}
+$\E[\Phi_{it}\mid F_{i1},\dots,F_{iT_i}]=\E[\Phi_{it}\mid F_{it}]$ for all $t$.
+\end{assumption}
+
+Assumption~\ref{as:exo} is the usual strict-exogeneity condition of static fixed-effects models; in the application it motivates entering digital adoption with a lag and it is discussed further in Section~\ref{sec:disc}. Assumption~\ref{as:cre} is a nonparametric version of the Mundlak device: the conditional mean of the country effect given the augmented controls may be any function of the country averages \citep{mundlak1978,wooldridge2010}. It is weaker than the linear Mundlak projection, and the part of $\alpha_i$ that it does not explain, $a_i=\alpha_i-h(\bar X_i,\bar D_i)$, is removed by the within transformation described below. Assumption~\ref{as:suff} requires that the augmented controls of period $t$ summarise the information in the whole control path that is relevant for predicting adoption; the Mundlak averages in $F_{it}$ are included precisely to carry this country-level information. Finally, $D_{it}$ must retain variation after conditioning on $F_{it}$ and removing country and year means; this overlap condition is formalised as the invertibility of the matrix $J$ in Assumption~\ref{as:reg}.
+
+Let $b(z)=(b_1(z),\dots,b_K(z))'$ be a cubic B-spline basis with interior knots at quantiles of $Z$ and write $\theta(z)=b(z)'\beta+r_K(z)$ with approximation error $r_K$. Define the $K$ ``sieve regressors'' $\Phi_{it}=D_{it}\,b(Z_{it})$ and the nuisance functions $\ell(F)=\E[Y\mid F]$ and $m(F)=\E[\Phi\mid F]$. Let $\M$ be the two-way within operator that removes country and year means from a variable (for unbalanced panels, by alternating projections). The population moment is
+\begin{equation}
+\psi(\beta;\ell,m)=\E\Big[\sum_t \M\big(\Phi-m(F)\big)_{it}\,\Big\{\M\big(Y-\ell(F)\big)_{it}-\M\big(\Phi-m(F)\big)_{it}'\beta\Big\}\Big]=0 .
+\label{eq:moment}
+\end{equation}
+Under Assumptions~\ref{as:exo}--\ref{as:suff} and $r_K=0$, $Y-\ell(F)-(\Phi-m(F))'\beta=a_i+\varepsilon_{it}$, because $\lambda_t$ is a function of the time index in $F$ and is absorbed by $\ell$. The term $a_i$ is removed by $\M$ and $\varepsilon_{it}$ is mean-independent of the whole path of $F$, so the true $\beta$ solves \eqref{eq:moment}.
+
+\subsection{Two structural properties}
+
+\begin{proposition}[Orthogonality and fixed-effect invariance]\label{prop:orth}
+Let $\psi$ be defined by~\eqref{eq:moment} and let Assumptions~\ref{as:exo}--\ref{as:suff} hold.
+(i) \emph{Neyman orthogonality:} for any directions $(\delta_\ell,\delta_m)$ in the nuisance space, $\partial_r\psi(\beta_0;\ell_0+r\delta_\ell,m_0+r\delta_m)\big|_{r=0}=0$.
+(ii) \emph{Exact invariance:} for any country-specific and year-specific constants $(c_i,c_t)$ and $(d_i,d_t)\in\mathbb{R}^K$, $\psi(\beta;\ell+c_i+c_t,\,m+d_i+d_t)=\psi(\beta;\ell,m)$ for all $\beta$.
+\end{proposition}
+
+Part (i) is the property that makes DML insensitive to first-order errors in the machine-learning fits. Part (ii) is specific to the panel construction: any error of the learners that takes the form of a country or year shift---a natural failure mode when trees approximate a fixed effect through country averages---has no effect on the estimate at all, so the product-rate condition of DML only needs to hold for the within-country, within-year component of the nuisance error. Section~\ref{sec:sim} shows that this matters in finite samples.
+
+\begin{proposition}[Structure-aware residualisation]\label{prop:struct}
+If $Z_{it}$ is an element of $F_{it}$, then $m_k(F)=b_k(Z)\,\mu(F)$ for $k=1,\dots,K$, where $\mu(F)=\E[D\mid F]$. Hence the orthogonalised sieve regressors are $b(Z_{it})\{D_{it}-\mu(F_{it})\}$, and the estimator requires only the two nuisance functions $\ell$ and $\mu$, whatever the sieve dimension $K$.
+\end{proposition}
+
+Proposition~\ref{prop:struct} follows from $\E[D\,b_k(Z)\mid F]=b_k(Z)\E[D\mid F]$ when $Z$ is measurable with respect to $F$. It reduces the number of learners from $K+1$ to two, avoids the instability of fitting $K$ separate regressions for highly collinear spline regressors, and allows the sieve (number of knots, penalty, or a linear basis for the BLP) to be changed after the nuisance step without refitting. In the dose-response model~\eqref{eq:dose}, $\Phi$ is a basis in $D$ and the $K$ conditional means are learned separately.
+
+\subsection{The Panel-DOSE algorithm}
+
+Algorithm~\ref{alg:dose} summarises the estimator. The final stage minimises a penalised least-squares criterion in the orthogonalised variables,
+\begin{equation}
+\hat\beta_\lambda=\argmin_\beta \ \sum_{i,t}\big(\tilde Y_{it}-\tilde\Phi_{it}'\beta\big)^2+\lambda\,n\,\beta' P\beta,\qquad P=\Delta_2'\Delta_2,
+\label{eq:pls}
+\end{equation}
+where $\tilde Y=\M(Y-\hat\ell)$, $\tilde\Phi=\M(\Phi-\hat m)$, $n=\sum_iT_i$, and $\Delta_2$ is the second-difference matrix of the P-spline approach of \citet{eilers1996}. Because the null space of $P$ contains the coefficients of linear functions, a large $\lambda$ shrinks $\theta(\cdot)$ towards a linear function rather than towards zero. The penalty is chosen by generalised cross-validation \citep{craven1979gcv}, $\mathrm{GCV}(\lambda)=n\,\mathrm{RSS}(\lambda)/\{n-\mathrm{tr}(H_\lambda)\}^2$, with $H_\lambda=\tilde\Phi(\tilde\Phi'\tilde\Phi+\lambda nP)^{-1}\tilde\Phi'$.
+
+\begin{algorithm}[t]
+\caption{Panel-DOSE}\label{alg:dose}
+\begin{algorithmic}[1]
+\Require Panel $(Y_{it},D_{it},X_{it},Z_{it})$; learner $\mathcal{L}$; folds $L$; repetitions $S$; knots $q$
+\State Build $F_{it}=(X_{it},\bar X_i,\bar D_i,\bar Z_i,t)$ and the B-spline basis $b(\cdot)$ with $q$ interior knots at quantiles of $Z$
+\For{$s=1,\dots,S$}
+  \State Randomly partition the \emph{countries} into $L$ folds $I_1,\dots,I_L$
+  \For{$l=1,\dots,L$}
+    \State Fit $\hat\ell^{(-l)}$ and $\hat\mu^{(-l)}$ by $\mathcal{L}$ on countries not in $I_l$
+    \State For $i\in I_l$: $\hat e^Y_{it}=Y_{it}-\hat\ell^{(-l)}(F_{it})$, \ $\hat e^\Phi_{it}=b(Z_{it})\{D_{it}-\hat\mu^{(-l)}(F_{it})\}$
+  \EndFor
+  \State Two-way demean: $\tilde Y=\M\hat e^Y$, $\tilde\Phi=\M\hat e^\Phi$
+  \State Choose $\hat\lambda_s$ by GCV and compute $\hat\beta_s$ from~\eqref{eq:pls}
+  \State Compute the cluster-robust covariance $\hat V_s$ from~\eqref{eq:vcov}
+\EndFor
+\State $\hat\beta=\mathrm{median}_s\,\hat\beta_s$; \ $\hat V=\mathrm{median}_s\{\hat V_s+(\hat\beta_s-\hat\beta)(\hat\beta_s-\hat\beta)'\}$
+\State \Return $\hat\theta(z)=b(z)'\hat\beta$, bands, group averages and BLP slope
+\end{algorithmic}
+\end{algorithm}
+
+Cross-fitting by countries rather than by observations is essential in a panel. With observation-level folds, the learner is trained on other years of the same country, so the fitted value of $Y_{it}$ partly reproduces its own country effect and the residuals are too small; country-level folds keep the training and evaluation samples independent under cluster sampling. Repeating the split $S$ times and taking the median, with the variance adjustment of \citet{chernozhukov2018dml}, removes the dependence of the estimate on a particular partition.
+
+\subsection{Inference}
+
+Let $A_\lambda=\tilde\Phi'\tilde\Phi+\lambda nP$ and $\hat u_{it}=\tilde Y_{it}-\tilde\Phi_{it}'\hat\beta$. The cluster-robust covariance estimator is
+\begin{equation}
+\hat V=c_n\,A_\lambda^{-1}\Big(\sum_{i=1}^G \hat s_i\hat s_i'\Big)A_\lambda^{-1},\qquad \hat s_i=\sum_t\tilde\Phi_{it}\hat u_{it},
+\label{eq:vcov}
+\end{equation}
+with the small-sample factor $c_n=\frac{G}{G-1}\frac{n-1}{n-K}$ \citep{cameron2015cluster}. For any linear functional $\omega(\beta)=w'\beta$---the value $\hat\theta(z)=b(z)'\hat\beta$, the average effect with $w=n^{-1}\sum_{it}b(Z_{it})$, a group average, or a difference of group averages---the standard error is $(w'\hat Vw)^{1/2}$. Simultaneous bands over a grid $z_1,\dots,z_J$ use the critical value $c_{1-a}$ equal to the $(1-a)$ quantile of $\max_j|\xi_j|$, where $\xi\sim N(0,\hat\Sigma)$ and $\hat\Sigma$ is the correlation matrix of $\{\hat\theta(z_j)\}$ \citep{montiel2019bands}. The BLP slope is computed by re-solving the final stage with a linear basis $b(z)=(1,z)'$, which by Proposition~\ref{prop:struct} requires no new nuisance fits.
+
+\begin{assumption}[Regularity]\label{as:reg}
+(a) Countries are independent, $G\to\infty$, and $T_i\le\bar T<\infty$. (b) The cross-fitted nuisance estimators satisfy $\|\hat\mu-\mu\|_2\,(\|\hat\mu-\mu\|_2+\|\hat\ell-\ell\|_2)=o_p(G^{-1/2})$ and $\|\hat\ell-\ell\|_2=o_p(1)$, where by Proposition~\ref{prop:orth}(ii) the norms need only apply to the within-transformed errors. (c) $J=\E[\sum_t\tilde\Phi^0_{it}\tilde\Phi^{0\prime}_{it}]$ is positive definite, where $\tilde\Phi^0$ uses the true nuisance functions, and fourth moments are bounded. (d) $K$ is fixed and $\lambda_G\sqrt G\to0$.
+\end{assumption}
+
+\begin{proposition}[Asymptotic normality]\label{prop:an}
+Under Assumptions~\ref{as:exo}--\ref{as:reg} and the conditions of Proposition~\ref{prop:struct}, $\sqrt G(\hat\beta-\beta_K)\xrightarrow{d}N(0,J^{-1}\Omega J^{-1})$, where $\beta_K$ is the sieve pseudo-true value and $\Omega=\E[s_is_i']$ with $s_i=\sum_t\tilde\Phi^0_{it}u_{it}$, and $G\hat V\xrightarrow{p}J^{-1}\Omega J^{-1}$.
+\end{proposition}
+
+\begin{remark}
+Proposition~\ref{prop:an} treats the sieve dimension as fixed, so $\hat\theta(z)$ is centred at the best sieve approximation $b(z)'\beta_K$. Inference on $\theta(z)$ itself requires $K\to\infty$ with the approximation bias negligible relative to the standard error; the conditions of \citet{belloni2015series} and \citet{semenova2021cate} for series projections of orthogonal signals then deliver pointwise and uniform validity. The average effect, group averages and the BLP slope are smooth functionals that do not require undersmoothing. In practice, the penalty selected by GCV trades a small smoothing bias for a large variance reduction; Section~\ref{sec:sim} quantifies the effect of this choice on coverage.
+\end{remark}
+
+%% ===========================================================================
+\section{Monte Carlo evidence}\label{sec:sim}
+
+\subsection{Design}
+
+The simulation mimics a macro panel of $G=100$ countries observed for $T=24$ years. Each country has a fixed effect $\alpha_i\sim N(0,1)$ and there is a random-walk year effect. Five controls follow $X_{it}=0.6X_{i,t-1}+0.4(\eta_{it}+0.5\alpha_i)$ with $\eta_{it}\sim N(0,I_5)$, so they are persistent and correlated with the fixed effect. The moderator $Z_{it}\in[0,1]$ trends slowly around a country-specific level. Digital adoption is a logistic diffusion index,
+\[
+D_{it}=\Lambda\big(-3+0.22t+0.6\alpha_i+0.8\sin(1.5X_{1it})+0.6X_{2it}\mathbb{1}\{X_{3it}>0\}+1.5Z_{it}+v_{it}\big),
+\]
+where $\Lambda$ is the logistic function and $v_{it}\sim N(0,1)$,
+and the outcome is $Y_{it}=\theta(Z_{it})D_{it}+g(X_{it},Z_{it})+\alpha_i+\lambda_t+\varepsilon_{it}$ with $\varepsilon_{it}\sim N(0,0.25)$ and the nonlinear control function
+\[
+g=\rho\big\{1.5\sin(1.5X_{1it})+X_{2it}\mathbb{1}\{X_{3it}>0\}+0.5|X_{4it}|+3.2(Z_{it}-0.5)^2\big\}.
+\]
+Adoption and the outcome therefore share country effects, a time trend and nonlinear functions of the controls. We consider four effect functions: \emph{constant} $\theta(z)=1$; \emph{linear} $\theta(z)=-0.5+3z$; \emph{threshold} $\theta(z)=-0.5+2.5/(1+e^{-12(z-0.5)})$, a smooth J-curve-type transition; and \emph{hump} $\theta(z)=2-8(z-0.5)^2$. The baseline sets $\rho=1$; sensitivity analyses vary the confounding strength ($\rho\in\{0.5,2\}$) and the number of countries ($G\in\{50,200\}$) for the threshold design.
+
+We compare seven estimators: (1) \emph{TWFE}, a linear two-way fixed-effects regression with a constant effect; (2) \emph{TWFE-interaction}, which adds $D\times Z$ and $D\times Z^2$; (3) \emph{FE-DML (constant)}, the panel DML estimator with Mundlak features, country-level cross-fitting and within transformation, which is Panel-DOSE with a single basis function, in the spirit of \citet{clarke2023panel}; (4) \emph{FE-DML + R-learner}, which fits $\theta(\cdot)$ to the same orthogonalised residuals with gradient boosting and the R-learner loss \citep{nie2021quasi}; (5) \emph{Pooled DML-sieve}, the sieve estimator of \citet{semenova2021cate} applied to the pooled data without Mundlak features or within transformation; (6) \emph{Panel-DOSE (unpenalised)}; and (7) \emph{Panel-DOSE}. All machine-learning estimators use the same LightGBM learner \citep{ke2017lightgbm} with 600 trees, five country-level folds and, for the sieve estimators, cubic B-splines with four interior knots and two repetitions of the sample split. Performance is measured on a grid of 17 points in $[0.1,0.9]$ by the integrated root-mean-squared error $\mathrm{IRMSE}=\{J^{-1}\sum_j(\hat\theta(z_j)-\theta(z_j))^2\}^{1/2}$ and the integrated bias, by the bias and RMSE of the average effect, and by the coverage of nominal 95\% pointwise and simultaneous bands. Each design is replicated 100 times (50 in the sensitivity analyses).
+
+\subsection{Results}
+
+Table~\ref{tab:sim} and Figure~\ref{fig:simirmse} report the results for the baseline designs. Four findings stand out.
+
+First, the linear fixed-effects estimators are severely biased. Because the control function is nonlinear and correlated with adoption, TWFE and TWFE-interaction overstate the effect by 0.5--0.9 units on average, and their confidence intervals almost never cover the truth. The interaction model does not help even when the true $\theta(\cdot)$ is exactly quadratic (the constant, linear and hump designs, in which its errors are identical because the effect function lies in the span of its regressors): its problem is the control function, not the flexibility of the effect.
+
+Second, handling the panel structure in the nuisance step is essential. The pooled DML sieve uses the same learner and the same sieve as Panel-DOSE but neither Mundlak features nor the within transformation. Its integrated bias is about 0.6 in every design, of the same order as that of TWFE, because the learners cannot separate the country effects from the controls and the orthogonalised treatment still carries the correlation between adoption and $\alpha_i$. Once the Mundlak features and the within step are added, the integrated bias falls to 0.05--0.07. The remaining bias is common to all panel-DML estimators and reflects the finite-sample regularisation bias of the nuisance learners; it is small relative to the effect.
+
+Third, among the estimators that handle fixed effects, the sieve dominates the alternatives whenever the effect is heterogeneous. Constant-effect FE-DML is the best estimator when the effect is in fact constant, but its IRMSE is two to five times that of Panel-DOSE in the linear, threshold and hump designs. The boosted R-learner, which fits $\theta(\cdot)$ to the same residuals, has an IRMSE of about 0.58 in every design because the residual-on-residual regression is noisy and trees approximate smooth functions poorly with a few thousand observations. Panel-DOSE reduces the integrated error by 73--81\% relative to TWFE-interaction and by 61--73\% relative to the R-learner in the three heterogeneous designs, and attains the lowest IRMSE in each of them. The penalty also pays off: relative to the unpenalised sieve, GCV reduces the IRMSE by 14--40\% in the heterogeneous designs. Figure~\ref{fig:simcurves} illustrates these differences for one sample per design.
+
+Fourth, inference is reasonably reliable. The pointwise 95\% intervals of the unpenalised sieve cover the true function at 93--94\% of grid points, and those of the penalised estimator at 84--93\%; the shortfall of the penalised version is largest in the threshold design, where the data-driven penalty induces smoothing bias around the steep part of the curve. Simultaneous bands cover the entire function in 70--88\% of replications. All panel-DML estimators estimate the average effect with an RMSE between 0.07 and 0.11, against more than 0.5 for the linear and pooled estimators.
+
+Table~\ref{tab:simsens} shows that the ranking is robust. For the threshold design, Panel-DOSE has the lowest IRMSE for every combination of sample size and confounding strength. Its error falls from 0.35 with 50 countries to 0.15 with 200, roughly in line with root-$G$ convergence of the sieve coefficients, whereas the pooled DML sieve and TWFE-interaction remain biased as $G$ grows. Doubling the strength of nonlinear confounding nearly doubles the error of TWFE-interaction but raises that of Panel-DOSE only from 0.23 to 0.29.
+
+\begin{table}[!t]
+\centering
+\begin{threeparttable}
+\caption{Monte Carlo results, $G=100$, $T=24$, $\rho=1$.}\label{tab:sim}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{2}{c}{Effect function} & \multicolumn{2}{c}{Average effect} & \multicolumn{2}{c}{Coverage (95\%)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Estimator & IRMSE & Int.\ bias & Bias & RMSE & Pointwise & Uniform\\
+\midrule
+%% BEGIN tables/sim_main.tex (generated by code/make_outputs.py)
+\multicolumn{7}{l}{\textit{Design: constant $\theta(z)$}}\\
+\quad TWFE & 0.631 & 0.631 & 0.631 & 0.640 & 0.00 & --\\
+\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
+\quad FE-DML (constant) & \textbf{0.074} & 0.057 & 0.057 & 0.090 & 0.91 & --\\
+\quad FE-DML + R-learner & 0.572 & 0.051 & 0.059 & 0.097 & -- & --\\
+\quad Pooled DML-sieve & 0.632 & 0.604 & 0.602 & 0.610 & 0.12 & --\\
+\quad Panel-DOSE (unpenalised) & 0.258 & 0.054 & 0.057 & 0.094 & 0.93 & 0.88\\
+\quad Panel-DOSE & 0.151 & 0.053 & 0.057 & 0.091 & 0.92 & 0.88\\
+\addlinespace
+\multicolumn{7}{l}{\textit{Design: linear $\theta(z)$}}\\
+\quad TWFE & 0.936 & 0.572 & 0.525 & 0.538 & 0.20 & --\\
+\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
+\quad FE-DML (constant) & 0.742 & 0.057 & 0.010 & 0.073 & 0.14 & --\\
+\quad FE-DML + R-learner & 0.587 & 0.054 & 0.056 & 0.100 & -- & --\\
+\quad Pooled DML-sieve & 0.651 & 0.616 & 0.610 & 0.619 & 0.13 & --\\
+\quad Panel-DOSE (unpenalised) & 0.265 & 0.059 & 0.059 & 0.095 & 0.94 & 0.86\\
+\quad Panel-DOSE & \textbf{0.160} & 0.056 & 0.058 & 0.093 & 0.91 & 0.86\\
+\addlinespace
+\multicolumn{7}{l}{\textit{Design: threshold $\theta(z)$}}\\
+\quad TWFE & 1.153 & 0.599 & 0.537 & 0.551 & 0.13 & --\\
+\quad TWFE-interaction & 0.870 & 0.656 & 0.708 & 0.718 & 0.16 & --\\
+\quad FE-DML (constant) & 0.986 & 0.069 & 0.007 & 0.079 & 0.07 & --\\
+\quad FE-DML + R-learner & 0.590 & 0.059 & 0.063 & 0.106 & -- & --\\
+\quad Pooled DML-sieve & 0.681 & 0.630 & 0.623 & 0.632 & 0.19 & --\\
+\quad Panel-DOSE (unpenalised) & 0.268 & 0.065 & 0.064 & 0.101 & 0.93 & 0.83\\
+\quad Panel-DOSE & \textbf{0.231} & 0.064 & 0.068 & 0.101 & 0.84 & 0.70\\
+\addlinespace
+\multicolumn{7}{l}{\textit{Design: hump $\theta(z)$}}\\
+\quad TWFE & 1.051 & 0.959 & 0.839 & 0.847 & 0.00 & --\\
+\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
+\quad FE-DML (constant) & 0.494 & 0.239 & 0.119 & 0.139 & 0.30 & --\\
+\quad FE-DML + R-learner & 0.576 & 0.059 & 0.065 & 0.100 & -- & --\\
+\quad Pooled DML-sieve & 0.701 & 0.652 & 0.615 & 0.623 & 0.12 & --\\
+\quad Panel-DOSE (unpenalised) & 0.258 & 0.048 & 0.044 & 0.088 & 0.94 & 0.87\\
+\quad Panel-DOSE & \textbf{0.210} & 0.071 & 0.055 & 0.091 & 0.89 & 0.77\\
+%% END tables/sim_main
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: averages over 100 replications. IRMSE and integrated bias are computed over a grid of 17 points in $[0.1,0.9]$; the lowest IRMSE in each design is in bold. Pointwise coverage is the share of grid points at which the 95\% confidence interval contains $\theta(z)$; uniform coverage is the share of replications in which the 95\% sup-$t$ band contains the whole function. ``--'' indicates that the estimator does not provide the quantity.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/sim_irmse.pdf}
+\caption{Integrated root-mean-squared error of the estimated effect function by design (100 replications). DOSE denotes Panel-DOSE and DOSE-u its unpenalised version.}\label{fig:simirmse}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/sim_curves.pdf}
+\caption{One simulated sample per design. Dashed black: true $\theta(z)$; blue: Panel-DOSE with 95\% pointwise (dark) and simultaneous (light) bands; red: TWFE with quadratic interaction.}\label{fig:simcurves}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\begin{threeparttable}
+\caption{Sensitivity of IRMSE to sample size and confounding strength (threshold design).}\label{tab:simsens}
+\small
+\begin{tabular}{lccccc}
+\toprule
+ & $G=50$ & $G=100$ & $G=100$ & $G=100$ & $G=200$\\
+ & $\rho=1$ & $\rho=0.5$ & $\rho=1$ & $\rho=2$ & $\rho=1$\\
+\midrule
+%% BEGIN tables/sim_sens.tex (generated by code/make_outputs.py)
+TWFE-interaction & 0.889 & 0.559 & 0.870 & 1.657 & 0.867\\
+FE-DML + R-learner & 0.701 & 0.591 & 0.590 & 0.671 & 0.471\\
+Pooled DML-sieve & 0.831 & 0.643 & 0.681 & 0.706 & 0.609\\
+Panel-DOSE & 0.348 & 0.217 & 0.231 & 0.288 & 0.146\\
+%% END tables/sim_sens
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: IRMSE of the estimated effect function; 50 replications per cell except $G=100,\rho=1$ (100 replications). $\rho$ scales the nonlinear confounding in the outcome equation.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+%% ===========================================================================
+\section{Empirical application: internet adoption and productivity growth}\label{sec:emp}
+
+\subsection{Data and specification}
+
+We combine the Penn World Table 10.0 \citep{feenstra2015pwt} with the International Telecommunication Union and World Bank series on internet users, mobile cellular subscriptions and fixed broadband subscriptions, as distributed by Our World in Data. The outcome is annual labour-productivity growth, $Y_{it}=100\,\Delta\ln(\text{RGDP}^{na}_{it}/\text{EMP}_{it})$. The treatment is the share of the population using the internet in year $t-1$, measured on $[0,1]$, so that $\theta(z)$ is the change in growth (in percentage points) associated with moving from no adoption to universal adoption; one tenth of it is the effect of a ten-percentage-point increase. Controls, all lagged one year, are log labour productivity (conditional convergence), log capital per worker, the human capital index, the investment and government consumption shares, openness (exports minus imports as shares of GDP), population growth, the labour share, lagged productivity growth, and mobile and fixed broadband subscriptions per capita; these follow the empirical growth literature \citep{barro1991,mankiw1992}. The sample covers 1996--2019, drops growth observations below the 1st and above the 99th percentile, and keeps countries with at least 15 usable years. The resulting unbalanced panel contains 2,319 observations on 110 countries, listed in \ref{app:data}. Table~\ref{tab:desc} reports descriptive statistics.
+
+Figure~\ref{fig:desc} shows the variation that identifies the effects. Internet use diffused in all groups of countries, but at very different times: in the countries with the highest initial productivity, about half of the population was online by the mid-2000s, whereas in the least productive third the share passed 20\% only after 2012. Productivity growth was highest in the middle group during the 2000s and in the low group in the early 2010s, dropped sharply in 2009 in the middle and high groups, and trended down in all groups in the second half of the 2010s, precisely when internet adoption in the low group accelerated. This co-movement illustrates why the conditioning set matters: controls for convergence, capital deepening and demography, and the flexible way in which Panel-DOSE uses them, are needed to separate the effect of adoption from the end of the catch-up boom. Because common shocks are absorbed by year effects, the estimates rely on differences across countries in the timing of adoption relative to their own productivity paths, conditional on the controls.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/desc_diffusion.pdf}
+\caption{Internet diffusion and labour-productivity growth by tercile of initial (first-year) labour productivity, sample averages by year.}\label{fig:desc}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\begin{threeparttable}
+\caption{Descriptive statistics, 110 countries, 1996--2019.}\label{tab:desc}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Variable & Obs. & Mean & Std.\ dev. & Min & Max\\
+\midrule
+%% BEGIN tables/descriptives.tex (generated by code/make_outputs.py)
+Labour-productivity growth (\%) & 2319 & 1.700 & 3.090 & -9.381 & 11.644\\
+TFP growth (\%) & 2319 & 0.420 & 2.794 & -12.153 & 12.173\\
+Internet users, share ($t-1$) & 2319 & 0.343 & 0.307 & 0.000 & 0.997\\
+Mobile subscriptions per capita ($t-1$) & 2319 & 0.740 & 0.521 & 0.000 & 3.311\\
+Fixed broadband per capita ($t-1$) & 2319 & 0.088 & 0.120 & 0.000 & 0.463\\
+Human capital index ($t-1$) & 2319 & 2.660 & 0.640 & 1.057 & 4.154\\
+Log labour productivity ($t-1$) & 2319 & 10.443 & 1.026 & 7.200 & 12.227\\
+Log capital per worker ($t-1$) & 2319 & 11.879 & 1.231 & 7.864 & 13.556\\
+Investment share ($t-1$) & 2319 & 0.233 & 0.078 & 0.005 & 0.840\\
+Government share ($t-1$) & 2319 & 0.176 & 0.060 & 0.007 & 0.514\\
+Trade openness ($t-1$) & 2319 & 0.676 & 0.596 & 0.033 & 6.214\\
+Population growth, \% ($t-1$) & 2319 & 1.233 & 1.402 & -3.272 & 17.511\\
+Labour share ($t-1$) & 2319 & 0.515 & 0.111 & 0.150 & 0.806\\
+%% END tables/descriptives
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Sources: Penn World Table 10.0; ITU and World Bank (via Our World in Data). TFP growth is available for a subset of countries.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+We estimate model~\eqref{eq:model} with two moderators that correspond to the two mechanisms discussed in Section~\ref{sec:lit}: the human capital index (absorptive capacity) and lagged log labour productivity (distance to the frontier). We also estimate the dose-response model~\eqref{eq:dose} in internet penetration. Panel-DOSE uses LightGBM with 400 trees, five country-level folds, five repetitions of the split and cubic B-splines with four interior knots; standard errors are clustered by country. We report the average effect, the effects averaged within terciles of the moderator (low, middle, high), the high-minus-low difference, and the BLP slope. As benchmarks, TWFE with the same controls yields $\hat\theta=-3.17$ (s.e.\ 0.84) and constant-effect FE-DML yields $-2.63$ (1.46); both are discussed below.
+
+\subsection{Results}
+
+Table~\ref{tab:emp} and Figure~\ref{fig:emp} summarise the estimates. The linear benchmarks set the stage. TWFE yields a negative and precisely estimated coefficient of $-3.17$ (s.e.\ 0.84): a ten-percentage-point increase in the share of internet users is associated with 0.32 percentage points lower labour-productivity growth in the following year. Adding a linear interaction with human capital gives a positive but insignificant interaction coefficient (0.63, s.e.\ 0.80). Constant-effect FE-DML, which replaces the linear control function by LightGBM, yields a similar point estimate, $-2.63$, but with a standard error (1.46) that is 74\% larger than that of TWFE.
+
+\paragraph{Human capital}
+With human capital as the moderator (Panel~A of Table~\ref{tab:emp} and Figure~\ref{fig:emp}a), the Panel-DOSE average effect is $-3.11$ (s.e.\ 1.76). The estimated function rises from about $-10$ at the 5th percentile of the human-capital index to values close to zero at the top of the distribution, and the average effect in the lowest tercile ($-5.56$) is almost three times that in the highest ($-1.94$). The gradient is, however, imprecisely estimated: the high-minus-low difference is 3.62 with a standard error of 4.80, the BLP slope is 2.02 (s.e.\ 3.31), and the 95\% simultaneous band contains a constant function. The shape and magnitude are stable across learners, sieve dimensions, the lag structure, the control set and the outcome (Figure~\ref{fig:emprob}), with the unpenalised sieve being, as expected, the most wiggly. Two exceptions are instructive. Using fixed broadband instead of internet users as the treatment produces a flat and very imprecise profile, plausibly reflecting the limited within-country variation in broadband penetration over this period once internet adoption is controlled for. Dropping the Mundlak features from the nuisance step flattens the profile entirely and attenuates the average effect to $-1.39$, which mirrors the behaviour of the pooled DML sieve in the simulations: when the learners cannot absorb the correlated part of the country effects, the orthogonalised treatment retains between-country variation that masks the heterogeneity.
+
+\paragraph{Distance to the frontier}
+With lagged log labour productivity as the moderator (Panel~B and Figure~\ref{fig:emp}b), the heterogeneity is sharper and statistically significant. The estimated effect is $-15.2$ (95\% interval $[-24.4,-5.9]$) at the 5th percentile of the productivity distribution (about 4,500 US dollars per worker at 2017 prices), becomes insignificant between about 11,500 and 15,000 dollars per worker, and lies between $-1.7$ and $-0.2$ from 35,000 to 100,000 dollars. In the least productive third of the sample the average effect is $-8.50$ (s.e.\ 3.19), that is, $-0.85$ percentage points of annual growth per ten-percentage-point increase in internet users; in the most productive third it is $-0.66$ (s.e.\ 2.24). The high-minus-low difference of 7.83 (s.e.\ 3.98) is significant at the 5\% level, and no constant function lies inside the 95\% simultaneous band. The difference ranges from 6.5 to 14.6 across the robustness checks and remains significant at the 10\% level or better in all of them; it is largest when TFP growth replaces labour-productivity growth, which suggests that the pattern is not driven by capital deepening.
+
+\paragraph{Dose response}
+The dose-response model (Figure~\ref{fig:emp}c) asks whether the returns to adoption change with the level of adoption itself. Above the 20th percentile of internet penetration, the estimated marginal effect $\hat f'(d)$ is flat and mostly slightly negative, and the hypothesis that $f$ is linear is not rejected ($p=0.85$). The gradient along development is therefore unlikely to be a disguised form of diminishing returns to adoption, although the dose response is poorly determined at very low penetration levels, where many low-productivity economies were located early in the sample.
+
+\begin{table}[!t]
+\centering
+\begin{threeparttable}
+\caption{Heterogeneous effects of internet adoption on labour-productivity growth.}\label{tab:emp}
+\footnotesize
+\begin{tabular}{lccccccc}
+\toprule
+ & \multicolumn{2}{c}{Average effect} & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}
+Specification & Est. & (s.e.) & Low & Middle & High & low & slope\\
+\midrule
+%% BEGIN tables/emp_main.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{Panel A. Moderator: human capital index}}\\
+\quad Baseline & $-3.11^{*}$ & (1.76) & $-5.56$ & $-1.84$ & $-1.94^{*}$ & $3.62$ & $2.02$\\
+ &  &  & (4.57) & (1.69) & (0.99) & (4.80) & (3.31)\\
+\quad Random forest nuisance & $-2.06$ & (1.57) & $-4.50$ & $-0.61$ & $-1.09$ & $3.40$ & $1.78$\\
+ &  &  & (3.99) & (1.55) & (0.97) & (4.16) & (2.75)\\
+\quad Three interior knots & $-3.12^{*}$ & (1.85) & $-5.65$ & $-1.96$ & $-1.75^{*}$ & $3.90$ & $2.02$\\
+ &  &  & (4.71) & (1.84) & (1.04) & (5.00) & (3.31)\\
+\quad Six interior knots & $-2.95^{*}$ & (1.64) & $-5.16$ & $-1.63$ & $-2.06^{**}$ & $3.10$ & $2.02$\\
+ &  &  & (4.36) & (1.69) & (0.98) & (4.57) & (3.31)\\
+\quad Unpenalised sieve & $-3.42$ & (2.15) & $-6.30$ & $-1.77$ & $-2.19^{***}$ & $4.11$ & $2.02$\\
+ &  &  & (5.96) & (1.81) & (0.82) & (6.00) & (3.31)\\
+\quad Two-year lag of internet & $-2.61$ & (1.85) & $-5.61$ & $-1.45$ & $-0.77$ & $4.84$ & $2.65$\\
+ &  &  & (4.67) & (1.83) & (1.09) & (4.90) & (3.11)\\
+\quad Without lagged growth & $-2.02$ & (1.76) & $-3.86$ & $-1.48$ & $-0.74$ & $3.12$ & $2.83$\\
+ &  &  & (4.39) & (1.84) & (1.09) & (4.76) & (3.31)\\
+\quad Broadband as treatment & $-0.58$ & (4.37) & $-0.91$ & $-0.65$ & $-0.17$ & $0.74$ & $0.36$\\
+ &  &  & (8.48) & (4.37) & (2.31) & (8.84) & (7.65)\\
+\quad Outcome: TFP growth & $-3.92^{*}$ & (2.01) & $-7.01$ & $-3.82^{**}$ & $-0.93$ & $6.08$ & $4.46$\\
+ &  &  & (4.41) & (1.93) & (1.26) & (5.01) & (3.85)\\
+\quad No Mundlak means & $-1.39$ & (1.43) & $-1.36$ & $-1.40$ & $-1.41$ & $-0.05$ & $0.02$\\
+ &  &  & (2.94) & (1.45) & (1.04) & (3.31) & (2.47)\\
+\addlinespace
+\multicolumn{8}{l}{\textit{Panel B. Moderator: lagged log labour productivity}}\\
+\quad Baseline & $-3.58^{**}$ & (1.69) & $-8.50^{***}$ & $-1.58$ & $-0.66$ & $7.83^{**}$ & $3.30$\\
+ &  &  & (3.19) & (1.94) & (2.24) & (3.98) & (2.13)\\
+\quad Random forest nuisance & $-2.78^{*}$ & (1.45) & $-7.51^{**}$ & $-0.87$ & $0.05$ & $7.56^{*}$ & $3.03$\\
+ &  &  & (3.05) & (1.20) & (2.04) & (3.86) & (2.00)\\
+\quad Two-year lag of internet & $-3.04^{**}$ & (1.51) & $-7.35^{**}$ & $-0.96$ & $-0.80$ & $6.54^{*}$ & $2.80$\\
+ &  &  & (2.99) & (1.38) & (2.19) & (3.94) & (2.00)\\
+\quad Without lagged growth & $-3.72^{**}$ & (1.56) & $-9.85^{***}$ & $-1.09$ & $-0.22$ & $9.63^{**}$ & $4.21^{*}$\\
+ &  &  & (3.53) & (1.63) & (2.06) & (4.40) & (2.30)\\
+\quad Outcome: TFP growth & $-6.64^{***}$ & (2.48) & $-15.93^{**}$ & $-2.65^{*}$ & $-1.32$ & $14.61^{**}$ & $3.42$\\
+ &  &  & (6.31) & (1.59) & (2.63) & (6.76) & (2.76)\\
+%% END tables/emp_main
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: Panel-DOSE estimates. The dependent variable is annual labour-productivity growth (\%) unless stated otherwise; the treatment is the lagged share of internet users (0--1). The moderator is the human capital index in Panel~A and lagged log labour productivity in Panel~B; terciles are defined over country-year observations. Standard errors (in parentheses) are clustered by country. Standard errors are clustered by country. $^{*}$, $^{**}$, $^{***}$ denote significance at 10\%, 5\% and 1\%.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/emp_main.pdf}
+\caption{Estimated effect of lagged internet adoption on labour-productivity growth. (a) $\hat\theta(z)$ by human capital, with the TWFE linear-interaction estimate (dashed); (b) $\hat\theta(z)$ by lagged log labour productivity; (c) marginal effect $\hat f'(d)$ in the dose-response model. Dark bands: 95\% pointwise; light bands: 95\% simultaneous. Grids span the 5th to 95th percentiles of the moderator (20th to 95th in panel c).}\label{fig:emp}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/emp_robust.pdf}
+\caption{Robustness of $\hat\theta(z)$ by human capital to the learner, the sieve, the timing of adoption, the control set, the outcome and the treatment of fixed effects. The shaded band is the 95\% pointwise band of the baseline.}\label{fig:emprob}
+\end{figure}
+
+%% ===========================================================================
+\section{Discussion}\label{sec:disc}
+
+\subsection{Interpretation}
+
+Three features of the empirical results deserve emphasis. First, the negative average association between internet adoption and subsequent labour-productivity growth is not an artefact of the estimator: TWFE, constant-effect FE-DML and Panel-DOSE all point in the same direction. What differs is precision. The TWFE standard error is roughly half of the debiased ones, because the linear control function attributes to digital adoption some of the variation that the learners assign to nonlinear combinations of convergence, capital deepening and demographic controls. Researchers who rely on TWFE alone would therefore overstate the confidence with which a digital ``drag'' or ``dividend'' can be asserted.
+
+Second, the average hides a gradient along the development dimension. In the least productive third of country-years, higher internet penetration is associated with markedly slower productivity growth, whereas in the most productive third the effect is small and insignificant. This pattern is what the J-curve argument of \citet{brynjolfsson2021jcurve} predicts when economies differ in how far they have progressed in accumulating the intangible complements of digital technologies: early in the process, resources are diverted towards reorganisation, training and new business models whose output is not yet measured. It is also consistent with models in which the returns to a technology depend on distance to the frontier \citep{acemoglu2006frontier} and with the finding of \citet{niebel2018ict} that developing economies do not obtain larger gains from ICT than developed ones. Composition effects offer a complementary explanation: in economies with a large low-productivity informal sector, digital platforms may expand employment in low-productivity services faster than output, lowering measured average labour productivity even when welfare rises \citep{hjort2019internet}.
+
+Third, human capital shows the same qualitative pattern but a much weaker one. The effect rises with the human-capital index, yet the high-minus-low difference is imprecisely estimated, and the simultaneous band contains a constant function. Two readings are possible. The Penn World Table index is based on years of schooling and returns to education and may capture the skills that are complementary to digital technologies only imperfectly \citep{sianesi2003education}. Alternatively, the complementarity operates through organisational and managerial capabilities that are correlated with overall productivity rather than with schooling. The data cannot discriminate between these readings, but the contrast between panels (a) and (b) of Figure~\ref{fig:emp} indicates that ``absorptive capacity'' is better proxied by the level of development than by formal education alone.
+
+\subsection{Policy implications}
+
+The results caution against treating connectivity targets as productivity policy. For economies far from the frontier, expanding internet access is not followed by faster measured productivity growth within the horizon we observe; if anything, the opposite holds. This does not imply that such investments are undesirable, since connectivity has consumer-surplus, inclusion and service-delivery benefits that productivity statistics do not capture \citep{worldbank2016wdr,goldfarb2019digital}. It does imply that the productivity dividend is contingent on complementary investment---in firm capabilities, management practices, skills and the reallocation of resources towards digitally intensive activities---and that policies promoting access should be bundled with such investments. For economies near the frontier, the absence of a strong positive effect of additional adoption, conditional on broadband and mobile diffusion, is consistent with saturation of the extensive margin; further gains are more likely to come from the intensity and quality of use than from additional users.
+
+\subsection{Limitations}
+
+The analysis has limitations that also point to extensions. The identifying assumptions are those of static fixed-effects models augmented by the correlated-random-effects restriction in the nuisance step. Strict exogeneity rules out feedback from productivity shocks to future adoption; lagging the treatment by one or two years mitigates reverse causality but does not eliminate it, and the inclusion of lagged productivity growth is subject to a Nickell-type bias that is small with $T\approx 21$ but not zero \citep{nickell1981}. Results are, however, similar when lagged growth is excluded. An instrumental-variable version of Panel-DOSE, in which the orthogonalised treatment is replaced by an orthogonalised instrument in the spirit of \citet{czernich2011broadband}, is a natural extension. Second, internet penetration measures access rather than the intensity or quality of use; measures of firm-level digital adoption or data-intensive investment would sharpen the interpretation. Third, the asymptotic theory treats the sieve dimension as fixed, so the confidence bands for $\theta(z)$ are centred at the best spline approximation; the simulation evidence indicates that the smoothing bias induced by the data-driven penalty can reduce pointwise coverage for sharply nonlinear functions, and the unpenalised version or low-dimensional functionals (group averages, BLP slopes) should be preferred when coverage is paramount. Finally, as with any aggregate analysis, the estimates describe country-level associations and need not carry over to firms or regions.
+
+%% ===========================================================================
+\section{Conclusion}\label{sec:concl}
+
+This paper has proposed Panel-DOSE, an estimator for the function that links the effect of a continuous digital treatment to the characteristics of the adopting economy in fixed-effects panels. The estimator combines Mundlak-augmented machine-learning nuisance functions, cross-fitting by country, a two-way within transformation of the orthogonalised residuals and a penalised spline sieve. Its estimating equation is Neyman-orthogonal and exactly invariant to additive country and year errors in the nuisance fits, and when the moderator is a control variable the estimator needs only two nuisance functions whatever the flexibility of the sieve. The procedure provides the effect function with pointwise and simultaneous bands, group-average effects and a best-linear-projection summary, and it is simple to implement with off-the-shelf learners.
+
+The Monte Carlo evidence shows that these ingredients matter. Linear fixed-effects models are badly biased when the control function is nonlinear, pooled machine-learning estimators that ignore the panel structure inherit the bias of the fixed effects, and a boosted R-learner applied to the same residuals is noisier than the sieve. Panel-DOSE attains the lowest integrated error in every design with a heterogeneous effect.
+
+Applied to 110 economies over 1996--2019, the estimator shows that the association between internet adoption and subsequent labour-productivity growth is negative on average and concentrated in economies far from the productivity frontier, while it is close to zero for economies near it. The digital dividend, in other words, does not arrive automatically with connectivity. Its timing and size depend on the capabilities of the adopting economy, which is what theories of absorptive capacity and the productivity J-curve predict. Future work could extend the estimator to instrumental variables and dynamic panels, apply it to firm- and region-level data on the intensity of digital use, and examine the moderating roles of institutions, competition and data governance, all of which are central to the digital economy.
+
+\section*{Data and code availability}
+The data are publicly available from the Penn World Table (version 10.0) and from the ITU/World Bank series distributed by Our World in Data. The Python code that implements Panel-DOSE and reproduces all tables and figures is included in the replication package accompanying this article.
+
+\section*{Declaration of competing interest}
+The author declares no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+\section*{CRediT authorship contribution statement}
+\textbf{Quang-Vinh Dang:} Conceptualization, Methodology, Software, Formal analysis, Data curation, Writing -- original draft, Writing -- review \& editing.
+
+\appendix
+\section{Proofs}\label{app:proofs}
+
+Throughout, the year effect is a function of the time index $t$, which is an element of $F_{it}$, so $\lambda_t$ is absorbed by $\ell$ and $\E[\lambda_t\mid F_{it}]=\lambda_t$. The two-way operator $\M$ is the orthogonal projection onto the complement of the space spanned by country and year indicators; it is symmetric and idempotent, and $\M c=0$ for any vector of the form $c_{it}=c_i+c_t$. For country $i$, collect the $T_i$ observations into $Y_i$, $\Phi_i$ ($T_i\times K$) and $F_i$, and write $V_i=\Phi_i-m_0(F_i)$ and $e_i=Y_i-\ell_0(F_i)-V_i\beta_0$. Under Assumptions~\ref{as:exo}--\ref{as:cre} and $r_K=0$, $e_{it}=a_i+\varepsilon_{it}$ with $a_i=\alpha_i-h(\bar X_i,\bar D_i)$. In the asymptotic arguments below, the within transformation is treated as country demeaning $Q_i=I_{T_i}-T_i^{-1}\iota\iota'$; the additional year demeaning is asymptotically negligible because year means converge to their population counterparts at rate $G^{-1/2}$ and $\lambda_t$ is already absorbed by $\ell$.
+
+\paragraph{Proof of Proposition~\ref{prop:orth}}
+(i) For directions $\delta_\ell(F)$ and $\delta_m(F)$,
+\[
+\psi(\beta_0;\ell_0+r\delta_\ell,m_0+r\delta_m)=\E\big[(V_i-r\delta_{m,i})'Q_i\big(e_i-r\delta_{\ell,i}+r\delta_{m,i}\beta_0\big)\big].
+\]
+Differentiating at $r=0$ gives $-\E[\delta_{m,i}'Q_ie_i]+\E[V_i'Q_i(\delta_{m,i}\beta_0-\delta_{\ell,i})]$. In the first term, $Q_ie_i=Q_i\varepsilon_i$ because $a_i$ is constant within country, and $\E[\varepsilon_{it}\mid F_{i1},\dots,F_{iT_i}]=0$ by Assumption~\ref{as:exo}, since $F_{is}$ is a function of $(D_i,X_i)$; hence the term is zero. In the second term, $Q_iw_i$ is a function of $(F_{i1},\dots,F_{iT_i})$ for $w_i=\delta_{m,i}\beta_0-\delta_{\ell,i}$, and $\E[V_{it}\mid F_{i1},\dots,F_{iT_i}]=0$ by Assumption~\ref{as:suff}; hence it is also zero.
+
+(ii) $\M(Y-\ell-c)=\M(Y-\ell)-\M c=\M(Y-\ell)$ and $\M(\Phi-m-d)=\M(\Phi-m)$ whenever $c$ and each column of $d$ are sums of country and year constants, because $\M$ annihilates the span of the country and year indicators. The sample and population moments are therefore unchanged for every $\beta$. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:struct}}
+If $Z_{it}$ is a coordinate of $F_{it}$, then $b_k(Z_{it})$ is $F_{it}$-measurable and $\E[D_{it}b_k(Z_{it})\mid F_{it}]=b_k(Z_{it})\E[D_{it}\mid F_{it}]$. Consequently $\Phi_{it}-m(F_{it})=b(Z_{it})\{D_{it}-\mu(F_{it})\}$. In the cross-fitted version, replacing $\mu$ by $\hat\mu^{(-l)}$ gives the residuals in Algorithm~\ref{alg:dose}. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:an}}
+Write $\tilde\Phi=\M(\Phi-\hat m)$, $\tilde Y=\M(Y-\hat\ell)$, and let $\tilde\Phi^0$, $\tilde Y^0$ be the same objects evaluated at the true nuisance functions. From~\eqref{eq:pls},
+\[
+\sqrt G(\hat\beta_\lambda-\beta_K)=\Big(\tfrac1G\tilde\Phi'\tilde\Phi+\lambda\tfrac nGP\Big)^{-1}\Big\{\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)-\sqrt G\lambda\tfrac nGP\beta_K\Big\}.
+\]
+The last term vanishes because $n/G\le\bar T$ and $\lambda_G\sqrt G\to0$. Let $\Delta_{m}=\hat m-m_0$ and $\Delta_\ell=\hat\ell-\ell_0$ on the evaluation fold. Then
+\[
+\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)=\tfrac1{\sqrt G}\sum_iV_i'Q_ie_i+R_1+R_2+R_3,
+\]
+where
+\begin{align*}
+R_1&=-G^{-1/2}\textstyle\sum_i\Delta_{m,i}'Q_ie_i, \qquad R_2=G^{-1/2}\textstyle\sum_iV_i'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i}),\\
+R_3&=-G^{-1/2}\textstyle\sum_i\Delta_{m,i}'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i}).
+\end{align*} Because the nuisance functions are estimated on countries outside the evaluation fold, conditionally on the training sample the summands of $R_1$ and $R_2$ are independent across countries with mean zero (by the arguments in the proof of Proposition~\ref{prop:orth}), and their conditional variances are bounded by a constant times $\|\Delta_m\|_2^2$ and $\|\Delta_m\|_2^2+\|\Delta_\ell\|_2^2$; hence $R_1,R_2=o_p(1)$ by Chebyshev's inequality under Assumption~\ref{as:reg}(b) and the consistency of both nuisance estimators. By the Cauchy--Schwarz inequality and $\|Q_i\|\le1$, $\|R_3\|\le C\sqrt G\,\|\Delta_m\|_2(\|\Delta_m\|_2+\|\Delta_\ell\|_2)$ for a constant $C$ depending on $\bar T$, $\beta_K$ and the bounded basis, which is $o_p(1)$ under Assumption~\ref{as:reg}(b); by Proposition~\ref{prop:struct}, $\|\Delta_m\|_2$ is bounded by a constant times $\|\hat\mu-\mu\|_2$. By the same arguments, $G^{-1}\tilde\Phi'\tilde\Phi=G^{-1}\sum_iV_i'Q_iV_i+o_p(1)\xrightarrow{p}J$. The Lindeberg--Feller central limit theorem for independent clusters with bounded fourth moments gives $G^{-1/2}\sum_iV_i'Q_ie_i\xrightarrow{d}N(0,\Omega)$, since $V_i'Q_ie_i=V_i'Q_i\varepsilon_i=s_i$ and $\E[s_i]=0$. Slutsky's theorem yields the stated limit. Consistency of $G\hat V$ follows by standard arguments for cluster-robust variance estimators \citep{cameron2015cluster}, because $\hat u_{it}-u_{it}$ and $\tilde\Phi_{it}-\tilde\Phi^0_{it}$ vanish in mean square. Finally, for a fixed number $S$ of sample splits, each $\hat\beta_s$ satisfies the same linear representation with the same leading term, so the median $\hat\beta$ does too, and the variance adjustment is asymptotically negligible \citep{chernozhukov2018dml}. \qed
+
+\section{Data and implementation details}\label{app:data}
+
+\paragraph{Variables}
+All variables except the digital-adoption series come from the Penn World Table 10.0. Labour productivity is real GDP at constant national prices (\texttt{rgdpna}) divided by persons engaged (\texttt{emp}); capital per worker uses the capital stock at constant national prices (\texttt{rnna}); TFP growth is the log change of \texttt{rtfpna}; the human capital index is \texttt{hc}; the investment and government shares are \texttt{csh\_i} and \texttt{csh\_g}; openness is \texttt{csh\_x}$-$\texttt{csh\_m}; the labour share is \texttt{labsh}. Internet users (percentage of the population), mobile cellular subscriptions and fixed broadband subscriptions (per 100 people) are ITU series disseminated through the World Development Indicators and Our World in Data; they are divided by 100. Broadband subscriptions before 2000 are set to zero when missing. All controls and the treatment enter with a one-year lag.
+
+\paragraph{Countries}
+Table~\ref{tab:countries} lists the 110 countries by tercile of initial labour productivity, the grouping used in Figure~\ref{fig:desc}. (The terciles in Table~\ref{tab:emp} are defined over country-year observations of lagged productivity, so countries can move between groups over time.)
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Countries in the estimation sample, by tercile of initial labour productivity.}\label{tab:countries}
+\footnotesize
+\begin{tabular}{lp{0.82\textwidth}}
+\toprule
+Group & Countries\\
+\midrule
+%% BEGIN tables/countries.tex (generated by code/make_outputs.py)
+%% END tables/countries
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Implementation}
+The nuisance learners are LightGBM gradient-boosted trees \citep{ke2017lightgbm} with 15 leaves, a minimum of 20 observations per leaf (10 in the simulations), row and column subsampling of 80\% and a learning rate of 0.03; the random-forest robustness check uses 400 trees \citep{breiman2001rf} with a minimum leaf size of 5 and half of the features considered at each split. The feature set $F_{it}$ contains the lagged controls, their country means, the country means of the treatment and the moderator, and the calendar year. The B-spline knots are placed at equally spaced quantiles of the moderator between its 0.5th and 99.5th percentiles, and values outside this range are assigned to the boundary. The GCV grid contains zero and 36 values of $\lambda$ equally spaced on the log scale between $10^{-4}$ and $10^{3}$. Simultaneous bands use 20,000 Gaussian draws. With two nuisance functions, five folds and five repetitions, a full Panel-DOSE fit on the empirical sample takes about 30 seconds on a single CPU core; by Proposition~\ref{prop:struct}, re-estimating the final stage with a different sieve takes a fraction of a second. The Python implementation, the data and the scripts that reproduce every table and figure are part of the replication package.
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+\end{document}
