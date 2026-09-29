@@ -138,16 +138,16 @@ def emp_outputs():
     tw = cur["twfe_hc"]
     g = np.array(tw["grid"])
     axes[0].plot(g, tw["est"], color=C_ALT, lw=1, ls="--", label="TWFE-interaction")
-    axes[0].set_xlabel("Human capital index (PWT hc)")
+    axes[0].set_xlabel("Mean years of schooling (lagged)")
     axes[0].set_ylabel(r"$\hat\theta$: pp growth per unit internet")
     axes[0].legend(frameon=False, fontsize=7)
     band(axes[1], cur["dose_lp"], C_MAIN, "Panel-DOSE")
-    axes[1].set_xlabel("Log labour productivity (lagged)")
+    axes[1].set_xlabel("Log GDP per worker (lagged)")
     # the lowest adoption quantiles contain very few observations; start at the 20th percentile
     band(axes[2], {k: v[3:] for k, v in cur["dose_net"].items()}, C_MAIN, "Panel-DOSE")
     axes[2].set_xlabel("Internet users (share, lagged)")
     axes[2].set_ylabel(r"$\hat f'(d)$")
-    for ax, t in zip(axes, ["(a) by human capital", "(b) by development level",
+    for ax, t in zip(axes, ["(a) by schooling", "(b) by development level",
                             "(c) dose response"]):
         ax.set_title(t, fontsize=9)
     fig.tight_layout()
@@ -162,7 +162,7 @@ def emp_outputs():
         if k.startswith("rob_") and k not in ("rob_Broadband as treatment",):
             ax.plot(cur[k]["grid"], cur[k]["est"], lw=0.8, alpha=0.8, label=k[4:])
     ax.axhline(0, color="k", lw=0.5)
-    ax.set_xlabel("Human capital index (PWT hc)")
+    ax.set_xlabel("Mean years of schooling (lagged)")
     ax.set_ylabel(r"$\hat\theta(z)$")
     ax.legend(frameon=False, fontsize=6, ncol=2)
     fig.tight_layout()
@@ -195,11 +195,11 @@ def emp_outputs():
              [f"({r.gate_diff_se:.2f})", f"({r.blp_slope_se:.2f})"]
         lines.append(" & " + " & ".join(se) + r"\\")
 
-    lines.append(r"\multicolumn{8}{l}{\textit{Panel A. Moderator: human capital index}}\\")
+    lines.append(r"\multicolumn{8}{l}{\textit{Panel A. Moderator: mean years of schooling}}\\")
     for s in panel_a:
         row(summ.set_index("spec").loc[s].rename(None).to_frame().T.assign(spec=s).iloc[0])
     lines.append(r"\addlinespace")
-    lines.append(r"\multicolumn{8}{l}{\textit{Panel B. Moderator: lagged log labour productivity}}\\")
+    lines.append(r"\multicolumn{8}{l}{\textit{Panel B. Moderator: lagged log GDP per worker}}\\")
     for s in panel_b:
         row(summ.set_index("spec").loc[s].rename(None).to_frame().T.assign(spec=s).iloc[0])
     (TAB / "emp_main.tex").write_text("\n".join(lines) + "\n")
@@ -234,14 +234,18 @@ def emp_outputs():
     (TAB / "countries.tex").write_text("\n".join(rows) + "\n")
 
     d = pd.read_csv(RES / "descriptives.csv", index_col=0)
-    labels = {"dlp": "Labour-productivity growth (\\%)", "dtfp": "TFP growth (\\%)",
+    labels = {"dlp": "Labour-productivity growth (\\%)",
               "internet_l1": "Internet users, share ($t-1$)",
               "mobile_l1": "Mobile subscriptions per capita ($t-1$)",
               "broadband_l1": "Fixed broadband per capita ($t-1$)",
-              "hc_l1": "Human capital index ($t-1$)", "lp_l1": "Log labour productivity ($t-1$)",
-              "kl_l1": "Log capital per worker ($t-1$)", "csh_i_l1": "Investment share ($t-1$)",
-              "csh_g_l1": "Government share ($t-1$)", "open_l1": "Trade openness ($t-1$)",
-              "dpop_l1": "Population growth, \\% ($t-1$)", "labsh_l1": "Labour share ($t-1$)"}
+              "hc_l1": "Mean years of schooling ($t-1$)",
+              "lp_l1": "Log GDP per worker ($t-1$)",
+              "csh_i_l1": "Investment share ($t-1$)",
+              "csh_g_l1": "Government consumption share ($t-1$)",
+              "open_l1": "Trade openness ($t-1$)",
+              "dpop_l1": "Population growth, \\% ($t-1$)",
+              "dep_l1": "Age-dependency ratio ($t-1$)",
+              "urb_l1": "Urban population share ($t-1$)"}
     lines = [f"{labels[i]} & {int(r['count'])} & {r['mean']:.3f} & {r['std']:.3f} & "
              f"{r['min']:.3f} & {r['max']:.3f}\\\\" for i, r in d.iterrows()]
     (TAB / "descriptives.tex").write_text("\n".join(lines) + "\n")

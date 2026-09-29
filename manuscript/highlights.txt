@@ -4,4 +4,4 @@ Highlights
 - Combines Mundlak features, country cross-fitting and a penalised spline sieve
 - Its moment is orthogonal and invariant to additive fixed-effect nuisance errors
 - Simulations: lowest error in all non-constant designs against TWFE and ML rivals
-- Internet-productivity link is negative far from the frontier and null near it
+- 141 countries, 1996-2025: no aggregate internet dividend in productivity growth

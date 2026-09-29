@@ -1,12 +1,15 @@
-"""Build the country-year panel used in the empirical application.
+"""Build the country-year panels used in the empirical application.
 
-Sources
--------
+Main panel (data/processed/panel.csv), 1996-2025
+* World Bank World Development Indicators (July 2026 release, downloaded by
+  download_wdi.py): GDP per person employed (constant 2021 PPP $), ITU digital-adoption
+  series, expenditure shares, demography.
+* UNDP Human Development Report 2025: mean years of schooling (1990-2023).
+
+PWT panel (data/processed/panel_pwt.csv), 1996-2019, used for robustness
 * Penn World Table 10.0 (Feenstra, Inklaar and Timmer, 2015): output, employment,
   capital, human capital, TFP and expenditure shares.
-* ITU / World Bank WDI digital-adoption series, distributed by Our World in Data:
-  internet users (% of population), mobile cellular and fixed broadband
-  subscriptions per 100 people.
+* ITU / World Bank digital-adoption series distributed by Our World in Data.
 """
 from pathlib import Path
 
@@ -18,7 +21,8 @@ RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "processed"
 OUT.mkdir(parents=True, exist_ok=True)
 
-START, END = 1996, 2019
+START, END = 1996, 2019          # PWT 10.0 ends in 2019
+WDI_END = 2025
 
 
 def load_owid(name, col):
@@ -27,7 +31,7 @@ def load_owid(name, col):
     return df.rename(columns={"Code": "iso", "Year": "year", df.columns[3]: col})[["iso", "year", col]]
 
 
-def build():
+def build_pwt():
     pwt = pd.read_excel(RAW / "pwt100.xlsx", sheet_name="Data")
     pwt = pwt.rename(columns={"countrycode": "iso"})
     keep = ["iso", "country", "year", "rgdpna", "emp", "pop", "hc", "rnna", "rtfpna",
@@ -72,11 +76,74 @@ def build():
     # Keep countries with at least 15 usable years so fixed effects are well identified.
     n = panel.groupby("iso")["year"].transform("size")
     panel = panel[n >= 15].reset_index(drop=True)
+    panel.to_csv(OUT / "panel_pwt.csv", index=False)
+    return panel
+
+
+def load_mys():
+    """UNDP mean years of schooling, long format; 2024 extrapolated from the 2019-2023 trend."""
+    h = pd.read_csv(RAW / "HDR25_Composite_indices_complete_time_series.csv", encoding="latin1")
+    cols = [c for c in h.columns if c.startswith("mys_") and c[4:].isdigit()]
+    m = h[["iso3"] + cols].melt(id_vars="iso3", var_name="year", value_name="mys")
+    m["year"] = m["year"].str[4:].astype(int)
+    m = m.rename(columns={"iso3": "iso"}).dropna()
+    last = m[m["year"].between(2019, 2023)]
+    slope = last.groupby("iso").apply(
+        lambda g: np.polyfit(g["year"], g["mys"], 1)[0] if len(g) >= 3 else 0.0,
+        include_groups=False)
+    base = m[m["year"] == 2023].set_index("iso")["mys"]
+    ext = (base + slope.reindex(base.index).fillna(0.0)).rename("mys").reset_index()
+    ext["year"] = 2024
+    return pd.concat([m, ext], ignore_index=True)
+
+
+def build_wdi():
+    w = RAW / "wdi"
+    meta = pd.read_csv(w / "countries.csv")
+    df = None
+    for f in ["gdp_per_worker", "internet", "mobile", "broadband", "invest", "govcons", "exports",
+              "imports", "popgrowth", "urban", "dependency"]:
+        x = pd.read_csv(w / f"{f}.csv")
+        df = x if df is None else df.merge(x, on=["iso", "year"], how="outer")
+    df = df.merge(load_mys(), on=["iso", "year"], how="left")
+    df = df.merge(meta[["iso", "country", "income"]], on="iso", how="left")
+    df = df.sort_values(["iso", "year"]).reset_index(drop=True)
+    # Before a country's first reported broadband figure the service did not exist: set to zero.
+    first = df[df["broadband"].notna()].groupby("iso")["year"].min()
+    pre = df["year"] < df["iso"].map(first).fillna(9999)
+    df.loc[pre & df["broadband"].isna(), "broadband"] = 0.0
+
+    g = df.groupby("iso", group_keys=False)
+    df["lp"] = np.log(df["gdp_per_worker"])
+    df["dlp"] = 100 * g["lp"].diff()
+    df["open"] = (df["exports"] + df["imports"]) / 100
+    df["csh_i"] = df["invest"] / 100
+    df["csh_g"] = df["govcons"] / 100
+    df["hc"] = df["mys"]
+    df["dpop"] = df["popgrowth"]
+    df["dep"] = df["dependency"] / 100
+    df["urb"] = df["urban"] / 100
+    for c in ["internet", "mobile", "broadband"]:
+        df[f"{c}_l1"] = g[c].shift(1) / 100.0
+    df["internet_l2"] = g["internet"].shift(2) / 100.0
+    for c in ["lp", "hc", "csh_i", "csh_g", "open", "dpop", "dep", "urb", "dlp"]:
+        df[f"{c}_l1"] = g[c].shift(1)
+
+    cols = ["iso", "country", "income", "year", "dlp", "internet_l1", "internet_l2", "mobile_l1",
+            "broadband_l1", "lp_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1",
+            "dep_l1", "urb_l1", "dlp_l1"]
+    panel = df[(df["year"] >= START) & (df["year"] <= WDI_END)][cols].dropna()
+    lo, hi = panel["dlp"].quantile([0.01, 0.99])
+    panel = panel[(panel["dlp"] >= lo) & (panel["dlp"] <= hi)]
+    n = panel.groupby("iso")["year"].transform("size")
+    panel = panel[n >= 15].reset_index(drop=True)
     panel.to_csv(OUT / "panel.csv", index=False)
     return panel
 
 
 if __name__ == "__main__":
-    p = build()
+    q = build_pwt()
+    print("PWT panel", q.shape, q["iso"].nunique(), "countries", q["year"].min(), q["year"].max())
+    p = build_wdi()
     print(p.shape, p["iso"].nunique(), "countries", p["year"].min(), p["year"].max())
     print(p.describe().T.round(3))

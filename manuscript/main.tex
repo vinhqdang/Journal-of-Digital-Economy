@@ -24,10 +24,11 @@
 
 \begin{document}
 \doublespacing
+\emergencystretch=3em
 
 \begin{frontmatter}
 
-\title{Where does the digital dividend arrive? A debiased machine-learning sieve estimator for heterogeneous effects of digital adoption in panel data}
+\title{Searching for the digital dividend: A debiased machine-learning sieve estimator for heterogeneous effects of digital adoption in panel data}
 
 \author{Quang-Vinh Dang\corref{cor1}}
 \ead{vinh.dq4@buv.edu.vn}
@@ -37,7 +38,7 @@
             country={Vietnam}}
 
 \begin{abstract}
-Whether digital adoption raises productivity is usually assessed with two-way fixed-effects regressions that impose a single, linear effect and a linear control function. Both restrictions are at odds with theories in which the returns to digital technologies depend on absorptive capacity and distance to the technological frontier. This paper develops Panel-DOSE, a debiased orthogonal sieve estimator for panel data that recovers the whole function linking the effect of a continuous digital treatment to a moderating variable. The estimator combines Mundlak-augmented machine-learning nuisance functions cross-fitted by country, a two-way within transformation of the orthogonalised residuals, and a penalised B-spline sieve whose smoothness is chosen by generalised cross-validation. It delivers pointwise and simultaneous confidence bands, group-average effects and a one-degree-of-freedom test of heterogeneity. We show that the estimating equation is Neyman-orthogonal and exactly invariant to additive unit and time errors in the nuisance functions, and that, when the moderator is a control variable, only two nuisance functions are needed whatever the sieve dimension. In Monte Carlo experiments with nonlinear confounding, Panel-DOSE attains the lowest integrated error in every non-constant design, reducing it by 60--80\% relative to linear fixed-effects models and boosted R-learners. Applied to 110 countries over 1996--2019, the estimator finds that the association between internet adoption and subsequent labour-productivity growth is negative on average and concentrated among economies far from the productivity frontier, while it is close to zero near the frontier. The evidence is consistent with a productivity J-curve in which the digital dividend arrives only once complementary capabilities are in place.
+Whether digital adoption raises productivity is usually assessed with two-way fixed-effects regressions that impose a single, linear effect and a linear control function. Both restrictions are at odds with theories in which the returns to digital technologies depend on absorptive capacity and distance to the technological frontier. This paper develops Panel-DOSE, a debiased orthogonal sieve estimator for panel data that recovers the whole function linking the effect of a continuous digital treatment to a moderating variable. The estimator combines Mundlak-augmented machine-learning nuisance functions cross-fitted by country, a two-way within transformation of the orthogonalised residuals, and a penalised B-spline sieve whose smoothness is chosen by generalised cross-validation. It delivers pointwise and simultaneous confidence bands, group-average effects and a one-degree-of-freedom test of heterogeneity. We show that the estimating equation is Neyman-orthogonal and exactly invariant to additive unit and time errors in the nuisance functions, and that, when the moderator is a control variable, only two nuisance functions are needed whatever the sieve dimension. In Monte Carlo experiments with nonlinear confounding, Panel-DOSE attains the lowest integrated error in every non-constant design, reducing it by 60--80\% relative to linear fixed-effects models and boosted R-learners. Applied to 141 countries over 1996--2025, the estimator finds no aggregate digital dividend: the average effect of internet adoption on subsequent labour-productivity growth is small, negative and insignificant, which rules out gains larger than about 0.13 percentage points per ten points of adoption, and it does not vary with schooling. Heterogeneity along the development dimension appears in some specifications but reverses sign when Penn World Table data replace World Bank data for the same countries and years, whereas a linear fixed-effects interaction reports it with spurious precision. Claims about where the digital dividend arrives should therefore be treated with caution.
 \end{abstract}
 
 \begin{keyword}
@@ -52,7 +53,7 @@ Digital adoption \sep Labor productivity \sep Double machine learning \sep Heter
 
 The expectation that digital technologies deliver a ``digital dividend'' in the form of faster productivity growth is central to development strategies and to much of the digital-economy literature \citep{worldbank2016wdr,goldfarb2019digital}. The empirical record is more mixed than this expectation suggests. Firm- and industry-level studies document large returns to information technology, but mainly where it is combined with organisational change and skilled labour \citep{brynjolfsson2000beyond,bresnahan2002it}. Cross-country evidence ranges from sizeable growth effects of broadband diffusion in advanced economies \citep{czernich2011broadband} to weak or insignificant effects in developing and emerging economies \citep{niebel2018ict,vu2020ict}. Recent contributions to this journal likewise emphasise that the economic consequences of digitalisation depend on structural and institutional conditions \citep{banga2026digitalisation,chen2026production}.
 
-A common thread in these findings is heterogeneity. Classic growth theory predicts that the payoff from a new technology depends on the capacity to absorb it, whether this is captured by human capital \citep{nelson1966,benhabib1994,cohen1990absorptive} or by distance to the technological frontier \citep{acemoglu2006frontier,comin2010diffusion}. The productivity J-curve of \citet{brynjolfsson2021jcurve} adds that general-purpose technologies such as the internet require complementary intangible investment that depresses measured productivity before raising it. Taken together, these arguments imply that the effect of digital adoption is a \emph{function} of the adopting economy's characteristics, possibly non-monotone and possibly negative over part of its domain.
+A common thread in these findings is heterogeneity. Classic growth theory predicts that the payoff from a new technology depends on the capacity to absorb it, whether this is captured by human capital \citep{nelson1966,benhabib1994,cohen1990absorptive} or by distance to the technological frontier \citep{acemoglu2006frontier,comin2010diffusion}. The productivity J-curve of \citet{brynjolfsson2021jcurve} adds that general-purpose technologies such as the internet require complementary intangible investment that depresses measured productivity before raising it. Taken together, these arguments imply that the effect of digital adoption is a \emph{function} of the adopting economy's characteristics, possibly non-monotone and possibly negative over part of its domain; arguments about ``leapfrogging'' point in the opposite direction, predicting the largest gains where information and transaction costs are initially highest.
 
 The standard empirical toolkit is poorly suited to estimating such a function. Two-way fixed-effects (TWFE) regressions deliver one number and, when heterogeneity is modelled at all, do so through a linear interaction term. They also specify the control function linearly, although the determinants of both productivity growth and digital adoption---income, capital deepening, demography, openness---interact nonlinearly. When the control function is misspecified and correlated with adoption, the resulting bias contaminates the average effect and, more seriously, its apparent heterogeneity. Double/debiased machine learning \citep[DML;][]{chernozhukov2018dml} addresses the control-function problem, and its panel extensions \citep{clarke2023panel} deal with fixed effects, but they target a constant parameter. Methods for heterogeneous effects, such as causal forests and the R-learner \citep{wager2018forest,athey2019grf,nie2021quasi}, have been developed for cross-sectional data with binary treatments; they do not exploit the within-country variation that identifies effects in macro panels and they provide limited inference on the shape of the effect function.
 
@@ -67,7 +68,7 @@ The paper makes three contributions. The first is methodological. We extend orth
 
 The second contribution is evidence on finite-sample performance. In a Monte Carlo study calibrated to a macro panel of 100 countries observed for 24 years, with fixed-effect and nonlinear confounding, Panel-DOSE attains the lowest integrated root-mean-squared error in all designs with a non-constant effect. It improves markedly on TWFE with linear interactions, on constant-effect panel DML, on a boosted R-learner applied to the same orthogonalised residuals, and on a pooled DML sieve that ignores the panel structure. The ablation shows that the fixed-effects treatment of the nuisance step, rather than machine learning per se, is responsible for most of the gain.
 
-The third contribution is substantive. We apply the estimator to 110 economies from the Penn World Table \citep{feenstra2015pwt} over 1996--2019, linking lagged internet adoption to labour-productivity growth. Conditional on flexible controls, the average association is negative, which is in line with the literature on the productivity paradox and J-curve \citep{brynjolfsson2021jcurve,syverson2017mismeasurement}. The average hides a clear gradient: the effect is strongly negative in the least productive third of country-years and statistically indistinguishable from zero in the most productive third. The gradient along human capital has the same sign but is estimated imprecisely. Linear TWFE finds a similar average but reports standard errors roughly half as large as those of the debiased estimators and misses the gradient along development. The results suggest that the digital dividend is not automatic and arrives only where complementary capabilities are already present.
+The third contribution is substantive. We apply the estimator to 141 economies over 1996--2025, combining World Bank productivity and ITU adoption data with UNDP schooling data, and compare the results with the Penn World Table \citep{feenstra2015pwt} for 1996--2019. Conditional on flexible controls, the average effect of lagged internet adoption on labour-productivity growth is small, negative and statistically insignificant, and the confidence interval excludes the large effects often invoked in policy debates. The effect does not vary with schooling. Along the development dimension, the baseline estimates suggest larger effects in the least productive economies, but the gradient is not robust and reverses sign when the Penn World Table replaces the World Bank data for the same countries and years. A linear TWFE interaction, by contrast, reports a highly significant gradient, illustrating how a restrictive control function can manufacture precision. The results suggest that the digital dividend is not automatic and that evidence on where it arrives is more fragile than conventional estimates imply.
 
 The remainder of the paper is organised as follows. Section~\ref{sec:lit} reviews the related literature. Section~\ref{sec:method} presents the model, the Panel-DOSE algorithm and its properties. Section~\ref{sec:sim} reports the Monte Carlo evidence. Section~\ref{sec:emp} presents the empirical application, Section~\ref{sec:disc} discusses implications and limitations, and Section~\ref{sec:concl} concludes. Proofs are collected in \ref{app:proofs} and data and implementation details in \ref{app:data}.
 
@@ -322,72 +323,78 @@ Panel-DOSE & 0.348 & 0.217 & 0.231 & 0.288 & 0.146\\
 \end{table}
 
 %% ===========================================================================
-\section{Empirical application: internet adoption and productivity growth}\label{sec:emp}
+\section{Empirical application: internet adoption and productivity growth, 1996--2025}\label{sec:emp}
 
 \subsection{Data and specification}
 
-We combine the Penn World Table 10.0 \citep{feenstra2015pwt} with the International Telecommunication Union and World Bank series on internet users, mobile cellular subscriptions and fixed broadband subscriptions, as distributed by Our World in Data. The outcome is annual labour-productivity growth, $Y_{it}=100\,\Delta\ln(\text{RGDP}^{na}_{it}/\text{EMP}_{it})$. The treatment is the share of the population using the internet in year $t-1$, measured on $[0,1]$, so that $\theta(z)$ is the change in growth (in percentage points) associated with moving from no adoption to universal adoption; one tenth of it is the effect of a ten-percentage-point increase. Controls, all lagged one year, are log labour productivity (conditional convergence), log capital per worker, the human capital index, the investment and government consumption shares, openness (exports minus imports as shares of GDP), population growth, the labour share, lagged productivity growth, and mobile and fixed broadband subscriptions per capita; these follow the empirical growth literature \citep{barro1991,mankiw1992}. The sample covers 1996--2019, drops growth observations below the 1st and above the 99th percentile, and keeps countries with at least 15 usable years. The resulting unbalanced panel contains 2,319 observations on 110 countries, listed in \ref{app:data}. Table~\ref{tab:desc} reports descriptive statistics.
+The main data set combines the World Bank's World Development Indicators (WDI, July 2026 release) with the UNDP Human Development Report 2025. The outcome is annual growth of GDP per person employed at constant 2021 PPP prices, $Y_{it}=100\,\Delta\ln(\text{GDP}_{it}/\text{EMP}_{it})$, which WDI compiles from national accounts and the International Labour Organization's modelled employment estimates and which is available up to 2025. The treatment is the share of the population using the internet (ITU) in year $t-1$, measured on $[0,1]$, so that $\theta(z)$ is the change in growth (in percentage points) associated with moving from no adoption to universal adoption; one tenth of it is the effect of a ten-percentage-point increase. Controls, all lagged one year, are log GDP per worker (conditional convergence), mean years of schooling, the gross capital formation and government consumption shares of GDP, trade openness (exports plus imports over GDP), population growth, the age-dependency ratio, the urban population share, lagged productivity growth, and mobile and fixed broadband subscriptions per capita; they follow the empirical growth literature \citep{barro1991,mankiw1992}. Mean years of schooling is available up to 2023; its 2024 value, which enters only the 2025 observations, is extrapolated from each country's 2019--2023 trend. The sample covers 1996--2025, drops growth observations below the 1st and above the 99th percentile, and keeps countries with at least 15 usable years. The resulting unbalanced panel contains 3,806 observations on 141 countries, listed in \ref{app:data}. Table~\ref{tab:desc} reports descriptive statistics.
 
-Figure~\ref{fig:desc} shows the variation that identifies the effects. Internet use diffused in all groups of countries, but at very different times: in the countries with the highest initial productivity, about half of the population was online by the mid-2000s, whereas in the least productive third the share passed 20\% only after 2012. Productivity growth was highest in the middle group during the 2000s and in the low group in the early 2010s, dropped sharply in 2009 in the middle and high groups, and trended down in all groups in the second half of the 2010s, precisely when internet adoption in the low group accelerated. This co-movement illustrates why the conditioning set matters: controls for convergence, capital deepening and demography, and the flexible way in which Panel-DOSE uses them, are needed to separate the effect of adoption from the end of the catch-up boom. Because common shocks are absorbed by year effects, the estimates rely on differences across countries in the timing of adoption relative to their own productivity paths, conditional on the controls.
+To connect with the growth-accounting literature, we also use the Penn World Table 10.0 \citep{feenstra2015pwt}, which ends in 2019 but provides capital stocks, a human-capital index and TFP. The PWT panel contains 2,319 observations on 110 countries over 1996--2019, uses PWT labour productivity (real GDP at constant national prices per person engaged) as the outcome and adds log capital per worker and the labour share to the controls. It serves as a robustness check, and it also allows us to ask whether conclusions depend on the source of the productivity data.
+
+Figure~\ref{fig:desc} shows the variation that identifies the effects. Internet use diffused in all groups of countries, but at very different times: in the countries with the highest initial productivity, about half of the population was online by the mid-2000s, whereas in the least productive third the share reached 20\% only in the mid-2010s and passed one half at the end of the sample. Productivity growth was highest in the low and middle groups during the 2000s, collapsed in 2009 and 2020, rebounded in 2010 and 2021, and was lowest in the high group in most years. Because common shocks such as the global financial crisis and the COVID-19 pandemic are absorbed by year effects, the estimates rely on differences across countries in the timing of adoption relative to their own productivity paths, conditional on the controls.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\textwidth]{figures/desc_diffusion.pdf}
-\caption{Internet diffusion and labour-productivity growth by tercile of initial (first-year) labour productivity, sample averages by year.}\label{fig:desc}
+\caption{Internet diffusion and labour-productivity growth by tercile of initial (first-year) GDP per worker, sample averages by year, 1996--2025.}\label{fig:desc}
 \end{figure}
 
 \begin{table}[!t]
 \centering
 \begin{threeparttable}
-\caption{Descriptive statistics, 110 countries, 1996--2019.}\label{tab:desc}
+\caption{Descriptive statistics, 141 countries, 1996--2025.}\label{tab:desc}
 \small
 \begin{tabular}{lccccc}
 \toprule
 Variable & Obs. & Mean & Std.\ dev. & Min & Max\\
 \midrule
 %% BEGIN tables/descriptives.tex (generated by code/make_outputs.py)
-Labour-productivity growth (\%) & 2319 & 1.700 & 3.090 & -9.381 & 11.644\\
-TFP growth (\%) & 2319 & 0.420 & 2.794 & -12.153 & 12.173\\
-Internet users, share ($t-1$) & 2319 & 0.343 & 0.307 & 0.000 & 0.997\\
-Mobile subscriptions per capita ($t-1$) & 2319 & 0.740 & 0.521 & 0.000 & 3.311\\
-Fixed broadband per capita ($t-1$) & 2319 & 0.088 & 0.120 & 0.000 & 0.463\\
-Human capital index ($t-1$) & 2319 & 2.660 & 0.640 & 1.057 & 4.154\\
-Log labour productivity ($t-1$) & 2319 & 10.443 & 1.026 & 7.200 & 12.227\\
-Log capital per worker ($t-1$) & 2319 & 11.879 & 1.231 & 7.864 & 13.556\\
-Investment share ($t-1$) & 2319 & 0.233 & 0.078 & 0.005 & 0.840\\
-Government share ($t-1$) & 2319 & 0.176 & 0.060 & 0.007 & 0.514\\
-Trade openness ($t-1$) & 2319 & 0.676 & 0.596 & 0.033 & 6.214\\
-Population growth, \% ($t-1$) & 2319 & 1.233 & 1.402 & -3.272 & 17.511\\
-Labour share ($t-1$) & 2319 & 0.515 & 0.111 & 0.150 & 0.806\\
+Labour-productivity growth (\%) & 3806 & 1.654 & 3.355 & -10.329 & 12.354\\
+Internet users, share ($t-1$) & 3806 & 0.378 & 0.334 & 0.000 & 1.000\\
+Mobile subscriptions per capita ($t-1$) & 3806 & 0.776 & 0.538 & 0.000 & 5.742\\
+Fixed broadband per capita ($t-1$) & 3806 & 0.095 & 0.129 & 0.000 & 0.487\\
+Mean years of schooling ($t-1$) & 3806 & 8.590 & 3.281 & 0.980 & 14.325\\
+Log GDP per worker ($t-1$) & 3806 & 10.485 & 1.055 & 7.214 & 12.677\\
+Investment share ($t-1$) & 3806 & 0.241 & 0.071 & -0.024 & 0.611\\
+Government consumption share ($t-1$) & 3806 & 0.159 & 0.054 & 0.020 & 0.435\\
+Trade openness ($t-1$) & 3806 & 0.860 & 0.544 & 0.156 & 4.426\\
+Population growth, \% ($t-1$) & 3806 & 1.289 & 1.458 & -10.927 & 21.700\\
+Age-dependency ratio ($t-1$) & 3806 & 0.595 & 0.175 & 0.173 & 1.112\\
+Urban population share ($t-1$) & 3806 & 0.607 & 0.214 & 0.109 & 1.000\\
 %% END tables/descriptives
 \bottomrule
 \end{tabular}
 \begin{tablenotes}\footnotesize
-\item Sources: Penn World Table 10.0; ITU and World Bank (via Our World in Data). TFP growth is available for a subset of countries.
+\item Sources: World Development Indicators (World Bank, July 2026 release), including ITU digital-adoption series; UNDP Human Development Report 2025 (mean years of schooling).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
 
-We estimate model~\eqref{eq:model} with two moderators that correspond to the two mechanisms discussed in Section~\ref{sec:lit}: the human capital index (absorptive capacity) and lagged log labour productivity (distance to the frontier). We also estimate the dose-response model~\eqref{eq:dose} in internet penetration. Panel-DOSE uses LightGBM with 400 trees, five country-level folds, five repetitions of the split and cubic B-splines with four interior knots; standard errors are clustered by country. We report the average effect, the effects averaged within terciles of the moderator (low, middle, high), the high-minus-low difference, and the BLP slope. As benchmarks, TWFE with the same controls yields $\hat\theta=-3.17$ (s.e.\ 0.84) and constant-effect FE-DML yields $-2.63$ (1.46); both are discussed below.
+We estimate model~\eqref{eq:model} with two moderators that correspond to the two mechanisms discussed in Section~\ref{sec:lit}: mean years of schooling (absorptive capacity) and lagged log GDP per worker (distance to the frontier). We also estimate the dose-response model~\eqref{eq:dose} in internet penetration. Panel-DOSE uses LightGBM with 400 trees, five country-level folds, five repetitions of the split and cubic B-splines with four interior knots; standard errors are clustered by country. We report the average effect, the effects averaged within terciles of the moderator (low, middle, high), the high-minus-low difference, and the BLP slope.
 
 \subsection{Results}
 
-Table~\ref{tab:emp} and Figure~\ref{fig:emp} summarise the estimates. The linear benchmarks set the stage. TWFE yields a negative and precisely estimated coefficient of $-3.17$ (s.e.\ 0.84): a ten-percentage-point increase in the share of internet users is associated with 0.32 percentage points lower labour-productivity growth in the following year. Adding a linear interaction with human capital gives a positive but insignificant interaction coefficient (0.63, s.e.\ 0.80). Constant-effect FE-DML, which replaces the linear control function by LightGBM, yields a similar point estimate, $-2.63$, but with a standard error (1.46) that is 74\% larger than that of TWFE.
+Table~\ref{tab:emp} and Figure~\ref{fig:emp} summarise the estimates.
 
-\paragraph{Human capital}
-With human capital as the moderator (Panel~A of Table~\ref{tab:emp} and Figure~\ref{fig:emp}a), the Panel-DOSE average effect is $-3.11$ (s.e.\ 1.76). The estimated function rises from about $-10$ at the 5th percentile of the human-capital index to values close to zero at the top of the distribution, and the average effect in the lowest tercile ($-5.56$) is almost three times that in the highest ($-1.94$). The gradient is, however, imprecisely estimated: the high-minus-low difference is 3.62 with a standard error of 4.80, the BLP slope is 2.02 (s.e.\ 3.31), and the 95\% simultaneous band contains a constant function. The shape and magnitude are stable across learners, sieve dimensions, the lag structure, the control set and the outcome (Figure~\ref{fig:emprob}), with the unpenalised sieve being, as expected, the most wiggly. Two exceptions are instructive. Using fixed broadband instead of internet users as the treatment produces a flat and very imprecise profile, plausibly reflecting the limited within-country variation in broadband penetration over this period once internet adoption is controlled for. Dropping the Mundlak features from the nuisance step flattens the profile entirely and attenuates the average effect to $-1.39$, which mirrors the behaviour of the pooled DML sieve in the simulations: when the learners cannot absorb the correlated part of the country effects, the orthogonalised treatment retains between-country variation that masks the heterogeneity.
+\paragraph{Average effect}
+There is no evidence of an aggregate digital dividend in labour-productivity growth. TWFE with the same controls yields $-1.23$ (s.e.\ 0.77), constant-effect FE-DML $-1.11$ (1.14), and the Panel-DOSE average effect in the baseline specification is $-0.94$ (1.13). The last estimate implies that a ten-percentage-point increase in internet users changes subsequent annual productivity growth by $-0.09$ percentage points, with a 95\% confidence interval of $[-0.32,\,0.13]$. The estimates are therefore precise enough to rule out positive effects larger than about 0.13 percentage points per ten points of adoption, an order of magnitude smaller than the broadband effects that \citet{czernich2011broadband} estimate for OECD countries. The average is negative and insignificant in every WDI-based specification of Panel~A, including the pre-COVID period 1996--2019 ($-1.75$, s.e.\ 1.51) and the sample that excludes 2020--2021 ($-1.01$, s.e.\ 1.11), so the pandemic years do not drive the result. In the PWT panel the average is more negative, $-3.11$ (s.e.\ 1.76), and marginally significant; restricting the WDI data to the same 110 countries and years gives $-2.23$ (1.92), indicating that the earlier period, not the data source, accounts for most of this difference.
+
+\paragraph{Schooling}
+With mean years of schooling as the moderator (Panel~A of Table~\ref{tab:emp} and Figure~\ref{fig:emp}a), the estimated function is flat and close to zero: it lies between $-2.3$ and $1.1$ over the 5th to 95th percentiles of schooling (2.6 to 13.0 years), the high-minus-low difference is 1.15 (s.e.\ 2.74), the BLP slope is 0.13 (s.e.\ 0.38) per year of schooling, and the simultaneous band contains a constant function. The absence of heterogeneity holds across learners, sieves, lags, samples and data sources (Figure~\ref{fig:emprob}). The only specification in which the difference reaches the 10\% level is the one without Mundlak features, which the simulations show to be biased.
 
 \paragraph{Distance to the frontier}
-With lagged log labour productivity as the moderator (Panel~B and Figure~\ref{fig:emp}b), the heterogeneity is sharper and statistically significant. The estimated effect is $-15.2$ (95\% interval $[-24.4,-5.9]$) at the 5th percentile of the productivity distribution (about 4,500 US dollars per worker at 2017 prices), becomes insignificant between about 11,500 and 15,000 dollars per worker, and lies between $-1.7$ and $-0.2$ from 35,000 to 100,000 dollars. In the least productive third of the sample the average effect is $-8.50$ (s.e.\ 3.19), that is, $-0.85$ percentage points of annual growth per ten-percentage-point increase in internet users; in the most productive third it is $-0.66$ (s.e.\ 2.24). The high-minus-low difference of 7.83 (s.e.\ 3.98) is significant at the 5\% level, and no constant function lies inside the 95\% simultaneous band. The difference ranges from 6.5 to 14.6 across the robustness checks and remains significant at the 10\% level or better in all of them; it is largest when TFP growth replaces labour-productivity growth, which suggests that the pattern is not driven by capital deepening.
+With lagged log GDP per worker as the moderator (Panel~B and Figure~\ref{fig:emp}b), the evidence is more intriguing but fragile. In the baseline specification the average effect is positive in the least productive third of country-years ($7.42$, s.e.\ 2.97) and negative in the most productive third ($-2.07$, s.e.\ 1.87), and the difference of $-9.49$ (s.e.\ 3.46) is significant at the 1\% level. This is the pattern predicted by ``leapfrogging'' arguments, in which the internet lowers information and transaction costs most where they are initially highest. Three observations, however, counsel against taking it at face value. First, the estimated function is not monotone: it oscillates between about $-4.5$ and $4.4$ below 25,000 dollars per worker, the BLP slope ($-2.20$, s.e.\ 1.39) is not significant, and the 95\% simultaneous band contains a constant function. Second, the tercile difference keeps its negative sign in all WDI-based robustness checks but shrinks to between $-3.0$ and $-7.4$ and is not significant in any of them. Third, and most tellingly, the sign reverses with the PWT data. In the PWT panel the effect is strongly negative in the least productive third ($-8.50$, s.e.\ 3.19) and close to zero in the most productive third, so that the difference is $+7.83$ (s.e.\ 3.98), and it is larger still for TFP growth ($+14.61$, s.e.\ 6.76). Because the WDI data restricted to the same 110 countries and years give a difference of $-5.62$ (s.e.\ 4.33), the reversal is due to how productivity and the controls are measured, not to the sample.
+
+The linear benchmark illustrates why this matters. A TWFE regression with a linear interaction between internet use and log GDP per worker produces an interaction coefficient of $-1.91$ with a standard error of 0.52 ($t\approx3.7$), that is, apparently strong evidence that the returns to adoption fall with development. The debiased estimates show that this precision is largely an artefact of the linear control function: once the controls enter flexibly, the gradient is imprecisely estimated, it is not robust to reasonable changes in the specification, and its sign depends on the data source.
 
 \paragraph{Dose response}
-The dose-response model (Figure~\ref{fig:emp}c) asks whether the returns to adoption change with the level of adoption itself. Above the 20th percentile of internet penetration, the estimated marginal effect $\hat f'(d)$ is flat and mostly slightly negative, and the hypothesis that $f$ is linear is not rejected ($p=0.85$). The gradient along development is therefore unlikely to be a disguised form of diminishing returns to adoption, although the dose response is poorly determined at very low penetration levels, where many low-productivity economies were located early in the sample.
+The dose-response model (Figure~\ref{fig:emp}c) asks whether the returns to adoption change with the level of adoption itself. The penalty selected by GCV shrinks $f$ to an almost linear function, and the estimated marginal effect $\hat f'(d)$ is within 0.1 of zero over the whole range from the 20th to the 95th percentile of internet penetration; the 95\% simultaneous band, whose half-width is about one percentage point, contains the zero function. There is thus no indication of either increasing returns (network effects) or diminishing returns (saturation) to internet adoption in aggregate productivity growth.
 
-\begin{table}[!t]
+\begin{table}[!p]
 \centering
 \begin{threeparttable}
 \caption{Heterogeneous effects of internet adoption on labour-productivity growth.}\label{tab:emp}
-\footnotesize
+\scriptsize
 \begin{tabular}{lccccccc}
 \toprule
  & \multicolumn{2}{c}{Average effect} & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP\\
@@ -395,44 +402,60 @@ The dose-response model (Figure~\ref{fig:emp}c) asks whether the returns to adop
 Specification & Est. & (s.e.) & Low & Middle & High & low & slope\\
 \midrule
 %% BEGIN tables/emp_main.tex (generated by code/make_outputs.py)
-\multicolumn{8}{l}{\textit{Panel A. Moderator: human capital index}}\\
-\quad Baseline & $-3.11^{*}$ & (1.76) & $-5.56$ & $-1.84$ & $-1.94^{*}$ & $3.62$ & $2.02$\\
+\multicolumn{8}{l}{\textit{Panel A. Moderator: mean years of schooling}}\\
+\quad Baseline & $-0.94$ & (1.13) & $-1.02$ & $-1.93$ & $0.13$ & $1.15$ & $0.13$\\
+ &  &  & (2.18) & (1.35) & (1.37) & (2.74) & (0.38)\\
+\quad Random forest nuisance & $-1.27$ & (1.13) & $-3.11$ & $-1.15$ & $0.46$ & $3.56$ & $0.47$\\
+ &  &  & (2.00) & (1.12) & (1.53) & (2.73) & (0.37)\\
+\quad Two-year lag of internet & $-1.42$ & (1.21) & $-3.28$ & $-1.48$ & $0.49$ & $3.77$ & $0.53$\\
+ &  &  & (2.27) & (1.23) & (1.35) & (2.81) & (0.42)\\
+\quad Without lagged growth & $-0.70$ & (1.16) & $-0.35$ & $-1.90$ & $0.16$ & $0.50$ & $0.20$\\
+ &  &  & (2.29) & (1.41) & (1.38) & (2.77) & (0.40)\\
+\quad Three interior knots & $-0.96$ & (1.12) & $-0.91$ & $-2.05$ & $0.08$ & $0.98$ & $0.13$\\
+ &  &  & (2.21) & (1.33) & (1.37) & (2.76) & (0.38)\\
+\quad Six interior knots & $-0.98$ & (1.12) & $-1.11$ & $-2.00$ & $0.16$ & $1.27$ & $0.13$\\
+ &  &  & (2.20) & (1.35) & (1.38) & (2.79) & (0.38)\\
+\quad Unpenalised sieve & $-1.34$ & (1.24) & $-1.19$ & $-2.81$ & $-0.03$ & $1.16$ & $0.13$\\
+ &  &  & (2.54) & (1.77) & (1.58) & (3.06) & (0.38)\\
+\quad Broadband as treatment & $-4.51$ & (3.55) & $-6.63$ & $-4.49$ & $-2.42$ & $4.21$ & $0.63$\\
+ &  &  & (7.40) & (3.46) & (2.19) & (8.22) & (1.42)\\
+\quad No Mundlak means & $-0.43$ & (0.96) & $-2.55$ & $-0.29$ & $1.57$ & $4.12^{*}$ & $0.60^{*}$\\
+ &  &  & (1.76) & (0.95) & (1.25) & (2.34) & (0.34)\\
+\quad Pre-COVID sample, 1996-2019 & $-1.75$ & (1.51) & $-2.42$ & $-1.75$ & $-1.07$ & $1.35$ & $0.19$\\
+ &  &  & (2.73) & (1.50) & (1.55) & (3.22) & (0.48)\\
+\quad Excluding 2020-2021 & $-1.01$ & (1.11) & $-0.70$ & $-2.37^{*}$ & $0.03$ & $0.73$ & $0.21$\\
+ &  &  & (2.06) & (1.40) & (1.40) & (2.65) & (0.39)\\
+\quad WDI data, PWT countries, 1996-2019 & $-2.23$ & (1.92) & $-4.07$ & $-2.18$ & $-0.43$ & $3.65$ & $0.52$\\
+ &  &  & (3.35) & (1.99) & (1.82) & (3.83) & (0.65)\\
+\quad PWT 10.0 sample, 1996-2019 & $-3.11^{*}$ & (1.76) & $-5.56$ & $-1.84$ & $-1.94^{*}$ & $3.62$ & $2.02$\\
  &  &  & (4.57) & (1.69) & (0.99) & (4.80) & (3.31)\\
-\quad Random forest nuisance & $-2.06$ & (1.57) & $-4.50$ & $-0.61$ & $-1.09$ & $3.40$ & $1.78$\\
- &  &  & (3.99) & (1.55) & (0.97) & (4.16) & (2.75)\\
-\quad Three interior knots & $-3.12^{*}$ & (1.85) & $-5.65$ & $-1.96$ & $-1.75^{*}$ & $3.90$ & $2.02$\\
- &  &  & (4.71) & (1.84) & (1.04) & (5.00) & (3.31)\\
-\quad Six interior knots & $-2.95^{*}$ & (1.64) & $-5.16$ & $-1.63$ & $-2.06^{**}$ & $3.10$ & $2.02$\\
- &  &  & (4.36) & (1.69) & (0.98) & (4.57) & (3.31)\\
-\quad Unpenalised sieve & $-3.42$ & (2.15) & $-6.30$ & $-1.77$ & $-2.19^{***}$ & $4.11$ & $2.02$\\
- &  &  & (5.96) & (1.81) & (0.82) & (6.00) & (3.31)\\
-\quad Two-year lag of internet & $-2.61$ & (1.85) & $-5.61$ & $-1.45$ & $-0.77$ & $4.84$ & $2.65$\\
- &  &  & (4.67) & (1.83) & (1.09) & (4.90) & (3.11)\\
-\quad Without lagged growth & $-2.02$ & (1.76) & $-3.86$ & $-1.48$ & $-0.74$ & $3.12$ & $2.83$\\
- &  &  & (4.39) & (1.84) & (1.09) & (4.76) & (3.31)\\
-\quad Broadband as treatment & $-0.58$ & (4.37) & $-0.91$ & $-0.65$ & $-0.17$ & $0.74$ & $0.36$\\
- &  &  & (8.48) & (4.37) & (2.31) & (8.84) & (7.65)\\
-\quad Outcome: TFP growth & $-3.92^{*}$ & (2.01) & $-7.01$ & $-3.82^{**}$ & $-0.93$ & $6.08$ & $4.46$\\
+\quad PWT 10.0: outcome TFP growth & $-3.92^{*}$ & (2.01) & $-7.01$ & $-3.82^{**}$ & $-0.93$ & $6.08$ & $4.46$\\
  &  &  & (4.41) & (1.93) & (1.26) & (5.01) & (3.85)\\
-\quad No Mundlak means & $-1.39$ & (1.43) & $-1.36$ & $-1.40$ & $-1.41$ & $-0.05$ & $0.02$\\
- &  &  & (2.94) & (1.45) & (1.04) & (3.31) & (2.47)\\
 \addlinespace
-\multicolumn{8}{l}{\textit{Panel B. Moderator: lagged log labour productivity}}\\
-\quad Baseline & $-3.58^{**}$ & (1.69) & $-8.50^{***}$ & $-1.58$ & $-0.66$ & $7.83^{**}$ & $3.30$\\
+\multicolumn{8}{l}{\textit{Panel B. Moderator: lagged log GDP per worker}}\\
+\quad Baseline & $1.06$ & (1.36) & $7.42^{**}$ & $-2.18$ & $-2.07$ & $-9.49^{***}$ & $-2.20$\\
+ &  &  & (2.97) & (1.88) & (1.87) & (3.46) & (1.39)\\
+\quad Random forest nuisance & $-1.00$ & (1.17) & $0.10$ & $-0.15$ & $-2.94^{**}$ & $-3.04$ & $-1.48$\\
+ &  &  & (2.40) & (1.43) & (1.44) & (2.94) & (1.30)\\
+\quad Two-year lag of internet & $0.45$ & (1.96) & $4.90$ & $-1.06$ & $-2.51$ & $-7.41$ & $-1.38$\\
+ &  &  & (5.31) & (1.73) & (1.81) & (5.58) & (1.59)\\
+\quad Without lagged growth & $0.38$ & (1.72) & $5.06$ & $-1.99$ & $-1.93$ & $-6.99$ & $-1.94$\\
+ &  &  & (4.59) & (1.78) & (1.59) & (4.91) & (1.55)\\
+\quad Pre-COVID sample, 1996-2019 & $-0.07$ & (2.08) & $3.97$ & $-2.42$ & $-1.77$ & $-5.74$ & $-2.19$\\
+ &  &  & (4.84) & (2.64) & (2.13) & (5.21) & (1.61)\\
+\quad Excluding 2020-2021 & $-0.50$ & (1.40) & $2.91$ & $-2.34$ & $-2.07$ & $-4.98$ & $-2.49^{*}$\\
+ &  &  & (3.40) & (2.00) & (1.88) & (3.94) & (1.39)\\
+\quad WDI data, PWT countries, 1996-2019 & $-0.87$ & (1.98) & $3.12$ & $-3.23$ & $-2.50$ & $-5.62$ & $-1.53$\\
+ &  &  & (4.06) & (2.38) & (2.25) & (4.33) & (2.14)\\
+\quad PWT 10.0 sample, 1996-2019 & $-3.58^{**}$ & (1.69) & $-8.50^{***}$ & $-1.58$ & $-0.66$ & $7.83^{**}$ & $3.30$\\
  &  &  & (3.19) & (1.94) & (2.24) & (3.98) & (2.13)\\
-\quad Random forest nuisance & $-2.78^{*}$ & (1.45) & $-7.51^{**}$ & $-0.87$ & $0.05$ & $7.56^{*}$ & $3.03$\\
- &  &  & (3.05) & (1.20) & (2.04) & (3.86) & (2.00)\\
-\quad Two-year lag of internet & $-3.04^{**}$ & (1.51) & $-7.35^{**}$ & $-0.96$ & $-0.80$ & $6.54^{*}$ & $2.80$\\
- &  &  & (2.99) & (1.38) & (2.19) & (3.94) & (2.00)\\
-\quad Without lagged growth & $-3.72^{**}$ & (1.56) & $-9.85^{***}$ & $-1.09$ & $-0.22$ & $9.63^{**}$ & $4.21^{*}$\\
- &  &  & (3.53) & (1.63) & (2.06) & (4.40) & (2.30)\\
-\quad Outcome: TFP growth & $-6.64^{***}$ & (2.48) & $-15.93^{**}$ & $-2.65^{*}$ & $-1.32$ & $14.61^{**}$ & $3.42$\\
+\quad PWT 10.0: outcome TFP growth & $-6.64^{***}$ & (2.48) & $-15.93^{**}$ & $-2.65^{*}$ & $-1.32$ & $14.61^{**}$ & $3.42$\\
  &  &  & (6.31) & (1.59) & (2.63) & (6.76) & (2.76)\\
 %% END tables/emp_main
 \bottomrule
 \end{tabular}
-\begin{tablenotes}\footnotesize
-\item Notes: Panel-DOSE estimates. The dependent variable is annual labour-productivity growth (\%) unless stated otherwise; the treatment is the lagged share of internet users (0--1). The moderator is the human capital index in Panel~A and lagged log labour productivity in Panel~B; terciles are defined over country-year observations. Standard errors (in parentheses) are clustered by country. Standard errors are clustered by country. $^{*}$, $^{**}$, $^{***}$ denote significance at 10\%, 5\% and 1\%.
+\begin{tablenotes}\scriptsize
+\item Notes: Panel-DOSE estimates. The dependent variable is annual labour-productivity growth (\%) unless stated otherwise, and the treatment is the lagged share of internet users (0--1). The baseline sample is the WDI panel (141 countries, 1996--2025). ``WDI data, PWT countries'' restricts it to the 110 countries of the PWT panel and to 1996--2019. The PWT rows use the Penn World Table 10.0 panel (1996--2019), in which the moderators are the PWT human-capital index (Panel~A) and log PWT labour productivity (Panel~B), and the controls add log capital per worker and the labour share. Terciles are defined over country-year observations. Standard errors (in parentheses) are clustered by country. $^{*}$, $^{**}$, $^{***}$ denote significance at 10\%, 5\% and 1\%.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
@@ -440,33 +463,34 @@ Specification & Est. & (s.e.) & Low & Middle & High & low & slope\\
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\textwidth]{figures/emp_main.pdf}
-\caption{Estimated effect of lagged internet adoption on labour-productivity growth. (a) $\hat\theta(z)$ by human capital, with the TWFE linear-interaction estimate (dashed); (b) $\hat\theta(z)$ by lagged log labour productivity; (c) marginal effect $\hat f'(d)$ in the dose-response model. Dark bands: 95\% pointwise; light bands: 95\% simultaneous. Grids span the 5th to 95th percentiles of the moderator (20th to 95th in panel c).}\label{fig:emp}
+\caption{Estimated effect of lagged internet adoption on labour-productivity growth, WDI panel 1996--2025. (a) $\hat\theta(z)$ by mean years of schooling, with the TWFE linear-interaction estimate (dashed); (b) $\hat\theta(z)$ by lagged log GDP per worker; (c) marginal effect $\hat f'(d)$ in the dose-response model. Dark bands: 95\% pointwise; light bands: 95\% simultaneous. Grids span the 5th to 95th percentiles of the moderator (20th to 95th in panel c).}\label{fig:emp}
 \end{figure}
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.75\textwidth]{figures/emp_robust.pdf}
-\caption{Robustness of $\hat\theta(z)$ by human capital to the learner, the sieve, the timing of adoption, the control set, the outcome and the treatment of fixed effects. The shaded band is the 95\% pointwise band of the baseline.}\label{fig:emprob}
+\caption{Robustness of $\hat\theta(z)$ by mean years of schooling (WDI panel) to the learner, the sieve, the timing of adoption, the control set, the sample period and the treatment of fixed effects. The shaded band is the 95\% pointwise band of the baseline.}\label{fig:emprob}
 \end{figure}
 
 %% ===========================================================================
+\clearpage
 \section{Discussion}\label{sec:disc}
 
 \subsection{Interpretation}
 
-Three features of the empirical results deserve emphasis. First, the negative average association between internet adoption and subsequent labour-productivity growth is not an artefact of the estimator: TWFE, constant-effect FE-DML and Panel-DOSE all point in the same direction. What differs is precision. The TWFE standard error is roughly half of the debiased ones, because the linear control function attributes to digital adoption some of the variation that the learners assign to nonlinear combinations of convergence, capital deepening and demographic controls. Researchers who rely on TWFE alone would therefore overstate the confidence with which a digital ``drag'' or ``dividend'' can be asserted.
+Three features of the empirical results deserve emphasis. First, over three decades and 141 economies, the diffusion of the internet has not been followed by faster measured labour-productivity growth. The point estimates are small and negative, and they are precise enough to exclude effects of the size often invoked in policy discussions. This is consistent with the aggregate productivity paradox and with the J-curve argument of \citet{brynjolfsson2021jcurve}: if the gains require complementary intangible investment that is poorly measured, the measured productivity dividend of a general-purpose technology may be small for a long time. It is also consistent with \citet{niebel2018ict} and with the heterogeneous findings surveyed by \citet{vu2020ict}. Access, as measured by the share of internet users, is a coarse proxy for the intensity and quality of use, and the gains may accrue through channels---consumer surplus, variety, time savings---that productivity statistics do not capture \citep{byrne2016mismeasurement,syverson2017mismeasurement}.
 
-Second, the average hides a gradient along the development dimension. In the least productive third of country-years, higher internet penetration is associated with markedly slower productivity growth, whereas in the most productive third the effect is small and insignificant. This pattern is what the J-curve argument of \citet{brynjolfsson2021jcurve} predicts when economies differ in how far they have progressed in accumulating the intangible complements of digital technologies: early in the process, resources are diverted towards reorganisation, training and new business models whose output is not yet measured. It is also consistent with models in which the returns to a technology depend on distance to the frontier \citep{acemoglu2006frontier} and with the finding of \citet{niebel2018ict} that developing economies do not obtain larger gains from ICT than developed ones. Composition effects offer a complementary explanation: in economies with a large low-productivity informal sector, digital platforms may expand employment in low-productivity services faster than output, lowering measured average labour productivity even when welfare rises \citep{hjort2019internet}.
+Second, formal schooling does not condition the effect. The theory of absorptive capacity \citep{nelson1966,benhabib1994,cohen1990absorptive} predicts larger returns in better-educated economies, but the estimated function is flat across the whole distribution of schooling and the data reject even moderate gradients. Years of schooling may capture the skills that are complementary to digital technologies only imperfectly \citep{sianesi2003education}, and complementarities may operate through managerial and organisational capabilities that aggregate data do not measure.
 
-Third, human capital shows the same qualitative pattern but a much weaker one. The effect rises with the human-capital index, yet the high-minus-low difference is imprecisely estimated, and the simultaneous band contains a constant function. Two readings are possible. The Penn World Table index is based on years of schooling and returns to education and may capture the skills that are complementary to digital technologies only imperfectly \citep{sianesi2003education}. Alternatively, the complementarity operates through organisational and managerial capabilities that are correlated with overall productivity rather than with schooling. The data cannot discriminate between these readings, but the contrast between panels (a) and (b) of Figure~\ref{fig:emp} indicates that ``absorptive capacity'' is better proxied by the level of development than by formal education alone.
+Third, heterogeneity along the development dimension is not robustly identified. Depending on the productivity data, the estimates suggest either leapfrogging (larger effects in low-productivity economies) or a J-curve in which the least productive economies experience a transitional drag. Neither pattern survives the full set of checks, and the linear TWFE interaction that seems to settle the question owes its precision to a restrictive control function. We view this as the main substantive lesson of the application: conclusions about where the digital dividend arrives are sensitive to data vintages and specification choices, and flexible estimators with honest uncertainty quantification are needed to reveal that sensitivity.
 
 \subsection{Policy implications}
 
-The results caution against treating connectivity targets as productivity policy. For economies far from the frontier, expanding internet access is not followed by faster measured productivity growth within the horizon we observe; if anything, the opposite holds. This does not imply that such investments are undesirable, since connectivity has consumer-surplus, inclusion and service-delivery benefits that productivity statistics do not capture \citep{worldbank2016wdr,goldfarb2019digital}. It does imply that the productivity dividend is contingent on complementary investment---in firm capabilities, management practices, skills and the reallocation of resources towards digitally intensive activities---and that policies promoting access should be bundled with such investments. For economies near the frontier, the absence of a strong positive effect of additional adoption, conditional on broadband and mobile diffusion, is consistent with saturation of the extensive margin; further gains are more likely to come from the intensity and quality of use than from additional users.
+The results caution against treating connectivity targets as productivity policy. Across the income distribution, expanding internet access has not been followed by faster measured productivity growth within the horizon we observe. This does not imply that such investments are undesirable, since connectivity has consumer-surplus, inclusion and service-delivery benefits that productivity statistics do not capture \citep{worldbank2016wdr,goldfarb2019digital}. It does imply that a productivity dividend, if it exists, is contingent on complementary investment---in firm capabilities, management practices, skills and the reallocation of resources towards digitally intensive activities---and that policies promoting access should be evaluated on their own merits rather than justified by expected aggregate productivity gains. The fragility of the heterogeneity estimates also suggests that governments should be wary of cross-country benchmarks that claim to identify the stage of development at which digital investment pays off.
 
 \subsection{Limitations}
 
-The analysis has limitations that also point to extensions. The identifying assumptions are those of static fixed-effects models augmented by the correlated-random-effects restriction in the nuisance step. Strict exogeneity rules out feedback from productivity shocks to future adoption; lagging the treatment by one or two years mitigates reverse causality but does not eliminate it, and the inclusion of lagged productivity growth is subject to a Nickell-type bias that is small with $T\approx 21$ but not zero \citep{nickell1981}. Results are, however, similar when lagged growth is excluded. An instrumental-variable version of Panel-DOSE, in which the orthogonalised treatment is replaced by an orthogonalised instrument in the spirit of \citet{czernich2011broadband}, is a natural extension. Second, internet penetration measures access rather than the intensity or quality of use; measures of firm-level digital adoption or data-intensive investment would sharpen the interpretation. Third, the asymptotic theory treats the sieve dimension as fixed, so the confidence bands for $\theta(z)$ are centred at the best spline approximation; the simulation evidence indicates that the smoothing bias induced by the data-driven penalty can reduce pointwise coverage for sharply nonlinear functions, and the unpenalised version or low-dimensional functionals (group averages, BLP slopes) should be preferred when coverage is paramount. Finally, as with any aggregate analysis, the estimates describe country-level associations and need not carry over to firms or regions.
+The analysis has limitations that also point to extensions. The identifying assumptions are those of static fixed-effects models augmented by the correlated-random-effects restriction in the nuisance step. Strict exogeneity rules out feedback from productivity shocks to future adoption; lagging the treatment by one or two years mitigates reverse causality but does not eliminate it, and the inclusion of lagged productivity growth is subject to a Nickell-type bias that is small with $T\approx 27$ but not zero \citep{nickell1981}. Results are, however, similar when lagged growth is excluded. An instrumental-variable version of Panel-DOSE, in which the orthogonalised treatment is replaced by an orthogonalised instrument in the spirit of \citet{czernich2011broadband}, is a natural extension. Second, the most recent observations rest on provisional national accounts and on the ILO's modelled employment estimates, and the 2024 value of schooling is extrapolated; the similarity of the full-sample and pre-COVID estimates suggests that these data issues do not drive the results, but future revisions may change them. Third, internet penetration measures access rather than the intensity or quality of use; measures of firm-level digital adoption or data-intensive investment would sharpen the interpretation. Fourth, the asymptotic theory treats the sieve dimension as fixed, so the confidence bands for $\theta(z)$ are centred at the best spline approximation; the simulation evidence indicates that the smoothing bias induced by the data-driven penalty can reduce pointwise coverage for sharply nonlinear functions, and the unpenalised version or low-dimensional functionals (group averages, BLP slopes) should be preferred when coverage is paramount. Finally, as with any aggregate analysis, the estimates describe country-level associations and need not carry over to firms or regions.
 
 %% ===========================================================================
 \section{Conclusion}\label{sec:concl}
@@ -475,10 +499,10 @@ This paper has proposed Panel-DOSE, an estimator for the function that links the
 
 The Monte Carlo evidence shows that these ingredients matter. Linear fixed-effects models are badly biased when the control function is nonlinear, pooled machine-learning estimators that ignore the panel structure inherit the bias of the fixed effects, and a boosted R-learner applied to the same residuals is noisier than the sieve. Panel-DOSE attains the lowest integrated error in every design with a heterogeneous effect.
 
-Applied to 110 economies over 1996--2019, the estimator shows that the association between internet adoption and subsequent labour-productivity growth is negative on average and concentrated in economies far from the productivity frontier, while it is close to zero for economies near it. The digital dividend, in other words, does not arrive automatically with connectivity. Its timing and size depend on the capabilities of the adopting economy, which is what theories of absorptive capacity and the productivity J-curve predict. Future work could extend the estimator to instrumental variables and dynamic panels, apply it to firm- and region-level data on the intensity of digital use, and examine the moderating roles of institutions, competition and data governance, all of which are central to the digital economy.
+Applied to 141 economies over 1996--2025, the estimator finds no aggregate digital dividend in labour-productivity growth: the average effect of internet adoption is small, negative and insignificant, and it does not vary with schooling. Heterogeneity along the development dimension appears in some specifications but changes sign with the source of the productivity data, whereas a linear fixed-effects interaction reports it with spurious precision. The digital dividend, in other words, does not arrive automatically with connectivity, and claims about where it arrives should be treated with caution. Future work could extend the estimator to instrumental variables and dynamic panels, apply it to firm- and region-level data on the intensity of digital use, and examine the moderating roles of institutions, competition and data governance, all of which are central to the digital economy.
 
 \section*{Data and code availability}
-The data are publicly available from the Penn World Table (version 10.0) and from the ITU/World Bank series distributed by Our World in Data. The Python code that implements Panel-DOSE and reproduces all tables and figures is included in the replication package accompanying this article.
+The data are publicly available from the World Bank's World Development Indicators, the UNDP Human Development Report 2025 and the Penn World Table (version 10.0). The Python code that implements Panel-DOSE, downloads the data and reproduces all tables and figures is included in the replication package accompanying this article.
 
 \section*{Declaration of competing interest}
 The author declares no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
@@ -524,21 +548,26 @@ R_3&=-G^{-1/2}\textstyle\sum_i\Delta_{m,i}'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,
 \section{Data and implementation details}\label{app:data}
 
 \paragraph{Variables}
-All variables except the digital-adoption series come from the Penn World Table 10.0. Labour productivity is real GDP at constant national prices (\texttt{rgdpna}) divided by persons engaged (\texttt{emp}); capital per worker uses the capital stock at constant national prices (\texttt{rnna}); TFP growth is the log change of \texttt{rtfpna}; the human capital index is \texttt{hc}; the investment and government shares are \texttt{csh\_i} and \texttt{csh\_g}; openness is \texttt{csh\_x}$-$\texttt{csh\_m}; the labour share is \texttt{labsh}. Internet users (percentage of the population), mobile cellular subscriptions and fixed broadband subscriptions (per 100 people) are ITU series disseminated through the World Development Indicators and Our World in Data; they are divided by 100. Broadband subscriptions before 2000 are set to zero when missing. All controls and the treatment enter with a one-year lag.
+\emph{Main panel (1996--2025).} From the World Development Indicators (July 2026 release, retrieved through the World Bank API): GDP per person employed at constant 2021 PPP dollars (\texttt{SL.GDP.PCAP.EM.KD}); individuals using the internet (\texttt{IT.NET.USER.ZS}); mobile cellular (\texttt{IT.CEL.SETS.P2}) and fixed broadband (\texttt{IT.NET.BBND.P2}) subscriptions per 100 people; gross capital formation (\texttt{NE.GDI.TOTL.ZS}), government final consumption (\texttt{NE.CON.GOVT.ZS}), exports (\texttt{NE.EXP.GNFS.ZS}) and imports (\texttt{NE.IMP.GNFS.ZS}) as percentages of GDP; population growth (\texttt{SP.POP.GROW}); the urban population share (\texttt{SP.URB.TOTL.IN.ZS}); and the age-dependency ratio (\texttt{SP.POP.DPND}). Mean years of schooling is taken from the UNDP Human Development Report 2025 composite-indices time series (1990--2023); the 2024 value is the 2023 value plus the country's 2019--2023 linear trend. Percentages are divided by 100. Broadband subscriptions are set to zero in the years before a country's first reported value. Regional and income aggregates are excluded.
+
+\emph{PWT panel (1996--2019).} From the Penn World Table 10.0: labour productivity is real GDP at constant national prices (\texttt{rgdpna}) divided by persons engaged (\texttt{emp}); capital per worker uses the capital stock at constant national prices (\texttt{rnna}); TFP growth is the log change of \texttt{rtfpna}; the human capital index is \texttt{hc}; the investment and government shares are \texttt{csh\_i} and \texttt{csh\_g}; openness is \texttt{csh\_x}$-$\texttt{csh\_m}; the labour share is \texttt{labsh}. The digital-adoption series are the ITU data distributed by Our World in Data. All controls and the treatment enter with a one-year lag in both panels.
 
 \paragraph{Countries}
-Table~\ref{tab:countries} lists the 110 countries by tercile of initial labour productivity, the grouping used in Figure~\ref{fig:desc}. (The terciles in Table~\ref{tab:emp} are defined over country-year observations of lagged productivity, so countries can move between groups over time.)
+Table~\ref{tab:countries} lists the 141 countries of the main panel by tercile of initial GDP per worker, the grouping used in Figure~\ref{fig:desc}. (The terciles in Table~\ref{tab:emp} are defined over country-year observations of lagged productivity, so countries can move between groups over time.)
 
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
-\caption{Countries in the estimation sample, by tercile of initial labour productivity.}\label{tab:countries}
+\caption{Countries in the main estimation sample, by tercile of initial GDP per worker.}\label{tab:countries}
 \footnotesize
 \begin{tabular}{lp{0.82\textwidth}}
 \toprule
 Group & Countries\\
 \midrule
 %% BEGIN tables/countries.tex (generated by code/make_outputs.py)
+Low & Armenia; Azerbaijan; Bangladesh; Benin; Bolivia; Burkina Faso; Cambodia; Cameroon; Central African Republic; Chad; China; Comoros; Congo, Dem. Rep.; Gambia, The; Georgia; Ghana; Guinea; Guinea-Bissau; Haiti; Honduras; India; Indonesia; Kenya; Kyrgyz Republic; Lao PDR; Lesotho; Madagascar; Mali; Moldova; Mongolia; Morocco; Mozambique; Nepal; Nicaragua; Niger; Pakistan; Philippines; Rwanda; Senegal; Sierra Leone; Solomon Islands; Sri Lanka; Tajikistan; Tanzania; Togo; Tonga; Uganda; Uzbekistan; Viet Nam; Zambia; Zimbabwe\\
+Middle & Albania; Angola; Belarus; Belize; Bosnia and Herzegovina; Botswana; Brazil; Bulgaria; Cabo Verde; Chile; Colombia; Congo, Rep.; Costa Rica; Croatia; Dominican Republic; Ecuador; Egypt, Arab Rep.; El Salvador; Estonia; Fiji; Guatemala; Iran, Islamic Rep.; Kazakhstan; Korea, Rep.; Latvia; Lithuania; Malaysia; Mauritania; Mauritius; Namibia; North Macedonia; Panama; Paraguay; Peru; Poland; Romania; Russian Federation; Sao Tome and Principe; Serbia; Slovak Republic; South Africa; Thailand; Tunisia; Turkiye; Ukraine; Uruguay\\
+High & Algeria; Argentina; Australia; Austria; Bahamas, The; Bahrain; Belgium; Brunei Darussalam; Canada; Cyprus; Czechia; Denmark; Finland; France; Gabon; Germany; Greece; Hong Kong SAR, China; Hungary; Iceland; Ireland; Israel; Italy; Japan; Kuwait; Luxembourg; Malta; Mexico; Montenegro; Netherlands; New Zealand; Norway; Oman; Portugal; Qatar; Saudi Arabia; Singapore; Slovenia; Spain; Sweden; Switzerland; United Arab Emirates; United Kingdom; United States\\
 %% END tables/countries
 \bottomrule
 \end{tabular}

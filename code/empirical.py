@@ -1,4 +1,4 @@
-"""Empirical application: heterogeneous productivity returns to internet adoption, 1996-2019."""
+"""Empirical application: heterogeneous productivity returns to internet adoption, 1996-2025."""
 import json
 import sys
 from pathlib import Path
@@ -16,8 +16,12 @@ ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "results"
 RES.mkdir(exist_ok=True)
 
-BASE_CONTROLS = ["lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1",
-                 "labsh_l1", "dlp_l1", "mobile_l1", "broadband_l1"]
+# Main WDI/UNDP panel, 1996-2025
+BASE_CONTROLS = ["lp_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep_l1",
+                 "urb_l1", "dlp_l1", "mobile_l1", "broadband_l1"]
+# Penn World Table 10.0 panel, 1996-2019 (robustness; the only source with capital and TFP)
+PWT_CONTROLS = ["lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1",
+                "labsh_l1", "dlp_l1", "mobile_l1", "broadband_l1"]
 
 
 def lgbm():
@@ -88,11 +92,12 @@ def summarise(m, name, grid):
 
 def main():
     df = pd.read_csv(ROOT / "data" / "processed" / "panel.csv")
+    pwt = pd.read_csv(ROOT / "data" / "processed" / "panel_pwt.csv")
     out, curves = [], {}
 
     # ---------------- descriptive statistics
-    desc_cols = ["dlp", "dtfp", "internet_l1", "mobile_l1", "broadband_l1", "hc_l1", "lp_l1",
-                 "kl_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "labsh_l1"]
+    desc_cols = ["dlp", "internet_l1", "mobile_l1", "broadband_l1", "hc_l1", "lp_l1",
+                 "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep_l1", "urb_l1"]
     desc = df[desc_cols].describe().T[["count", "mean", "std", "min", "max"]]
     desc.to_csv(RES / "descriptives.csv")
 
@@ -101,6 +106,8 @@ def main():
     bi, si, Vi = twfe(df, "dlp", "internet_l1", BASE_CONTROLS, inter="hc_l1")
     lin = {"twfe_b": b[0], "twfe_se": s[0], "twfe_int_b": bi[0], "twfe_int_se": si[0],
            "twfe_int_dz": bi[-1], "twfe_int_dz_se": si[-1]}
+    bl, sl, _ = twfe(df, "dlp", "internet_l1", BASE_CONTROLS, inter="lp_l1")
+    lin.update({"twfe_lp_dz": bl[-1], "twfe_lp_dz_se": sl[-1]})
     hc_grid = np.quantile(df["hc_l1"], np.linspace(0.05, 0.95, 19))
     Lg = np.zeros((len(hc_grid), len(bi)))
     Lg[:, 0], Lg[:, -1] = 1, hc_grid
@@ -112,15 +119,9 @@ def main():
     # ---------------- main specification: theta(human capital)
     main_m = fit_dose(df)
     out.append(summarise(main_m, "Baseline (LightGBM, Z = human capital)", hc_grid))
-    e = main_m.effect(hc_grid)
-    curves["dose_hc"] = e.to_dict(orient="list")
-    # where does the return become significantly positive?
-    sig = e[e["lo"] > 0]
-    lin["hc_threshold_pointwise"] = float(sig["grid"].min()) if len(sig) else None
-    lin["hc_share_obs_above_threshold"] = (float((df["hc_l1"] >= sig["grid"].min()).mean())
-                                           if len(sig) else None)
+    curves["dose_hc"] = main_m.effect(hc_grid).to_dict(orient="list")
 
-    # ---------------- theta(digital maturity): dose-response in internet penetration
+    # ---------------- dose response in internet penetration
     dose_m = fit_dose(df, mode="dose", z=None)
     net_grid = np.quantile(df["internet_l1"], np.linspace(0.05, 0.95, 19))
     out.append(summarise(dose_m, "Dose response in internet penetration", net_grid))
@@ -132,41 +133,48 @@ def main():
     out.append(summarise(dev_m, "Z = initial labour productivity", lp_grid))
     curves["dose_lp"] = dev_m.effect(lp_grid).to_dict(orient="list")
 
-    # ---------------- robustness on the baseline
-    rob = [
-        ("Random forest nuisance", dict(learner=rf)),
-        ("Three interior knots", dict(n_knots=3)),
-        ("Six interior knots", dict(n_knots=6)),
-        ("Unpenalised sieve", dict(penalty=False)),
-        ("Two-year lag of internet", dict(d="internet_l2")),
-        ("Without lagged growth", dict(controls=[c for c in BASE_CONTROLS if c != "dlp_l1"])),
-        ("Broadband as treatment", dict(d="broadband_l1",
-                                        controls=[c for c in BASE_CONTROLS if c != "broadband_l1"]
-                                        + ["internet_l1"])),
-        ("Outcome: TFP growth", dict(y="dtfp", controls=[c for c in BASE_CONTROLS if c != "dlp_l1"])),
-        ("No Mundlak means", dict(mundlak=False)),
+    no_lag = [c for c in BASE_CONTROLS if c != "dlp_l1"]
+    pwt_no_lag = [c for c in PWT_CONTROLS if c != "dlp_l1"]
+    pre = df[df["year"] <= 2019]
+    nocovid = df[~df["year"].isin([2020, 2021])]
+    common = [
+        ("Random forest nuisance", df, dict(learner=rf)),
+        ("Two-year lag of internet", df, dict(d="internet_l2")),
+        ("Without lagged growth", df, dict(controls=no_lag)),
+        ("Pre-COVID sample, 1996-2019", pre, {}),
+        ("Excluding 2020-2021", nocovid, {}),
     ]
-    for name, kw in rob:
-        sub = df.dropna(subset=["dtfp"]) if kw.get("y") == "dtfp" else df
-        m = fit_dose(sub, **kw)
-        out.append(summarise(m, name, hc_grid))
-        curves["rob_" + name] = m.effect(hc_grid).to_dict(orient="list")
-        print(name, "done")
-
-    rob_lp = [
-        ("Z = productivity: random forest nuisance", dict(learner=rf)),
-        ("Z = productivity: two-year lag of internet", dict(d="internet_l2")),
-        ("Z = productivity: without lagged growth",
-         dict(controls=[c for c in BASE_CONTROLS if c != "dlp_l1"])),
-        ("Z = productivity: outcome TFP growth",
-         dict(y="dtfp", controls=[c for c in BASE_CONTROLS if c != "dlp_l1"])),
+    hc_only = [
+        ("Three interior knots", df, dict(n_knots=3)),
+        ("Six interior knots", df, dict(n_knots=6)),
+        ("Unpenalised sieve", df, dict(penalty=False)),
+        ("Broadband as treatment", df,
+         dict(d="broadband_l1", controls=[c for c in BASE_CONTROLS if c != "broadband_l1"]
+              + ["internet_l1"])),
+        ("No Mundlak means", df, dict(mundlak=False)),
     ]
-    for name, kw in rob_lp:
-        sub = df.dropna(subset=["dtfp"]) if kw.get("y") == "dtfp" else df
-        m = fit_dose(sub, z="lp_l1", **kw)
-        out.append(summarise(m, name, lp_grid))
-        curves["roblp_" + name] = m.effect(lp_grid).to_dict(orient="list")
-        print(name, "done")
+    same = df[df["iso"].isin(pwt["iso"].unique()) & (df["year"] <= 2019)]
+    pwt_specs = [
+        ("WDI data, PWT countries, 1996-2019", same, {}),
+        ("PWT 10.0 sample, 1996-2019", pwt, dict(controls=PWT_CONTROLS)),
+        ("PWT 10.0: outcome TFP growth", pwt.dropna(subset=["dtfp"]),
+         dict(y="dtfp", controls=pwt_no_lag)),
+    ]
+    for name, data, kw in common[:3] + hc_only + common[3:] + pwt_specs:
+        m = fit_dose(data, **kw)
+        grid = hc_grid if not name.startswith(("PWT", "WDI data")) else np.quantile(
+            data["hc_l1"], np.linspace(0.05, 0.95, 19))
+        out.append(summarise(m, name, grid))
+        key = ("pwt_" if name.startswith(("PWT", "WDI data")) else "rob_") + name
+        curves[key] = m.effect(grid).to_dict(orient="list")
+        print(name, "done", flush=True)
+    for name, data, kw in common + pwt_specs:
+        m = fit_dose(data, z="lp_l1", **kw)
+        grid = lp_grid if not name.startswith(("PWT", "WDI data")) else np.quantile(
+            data["lp_l1"], np.linspace(0.05, 0.95, 19))
+        out.append(summarise(m, "Z = productivity: " + name, grid))
+        curves["roblp_" + name] = m.effect(grid).to_dict(orient="list")
+        print("lp", name, "done", flush=True)
 
     pd.DataFrame(out).to_csv(RES / "empirical_summary.csv", index=False)
     json.dump({"linear": lin, "curves": curves, "n_obs": len(df),
