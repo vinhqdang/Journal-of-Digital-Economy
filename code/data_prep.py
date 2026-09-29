@@ -75,9 +75,13 @@ def build_pwt(fname="pwt100.xlsx", end=END, out="panel_pwt.csv"):
         df[f"{c}_l1"] = g[c].shift(1)
     df["dlp_l1"] = g["dlp"].shift(1)
 
+    early = df[df["year"].between(1991, 1995) & df["lp"].notna()]
+    first_pre = early.sort_values("year").groupby("iso")["lp"].first()
+    first_any = df[df["lp"].notna()].sort_values("year").groupby("iso")["lp"].first()
+    df["lp_init"] = df["iso"].map(first_pre).fillna(df["iso"].map(first_any))
     cols = ["iso", "country", "year", "dlp", "dtfp", "dkl", "internet_l1", "internet_l2",
             "mobile_l1", "broadband_l1", "lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1",
-            "open_l1", "dpop_l1", "labsh_l1", "dlp_l1"]
+            "open_l1", "dpop_l1", "labsh_l1", "dlp_l1", "lp_init"]
     panel = df[(df["year"] >= START) & (df["year"] <= end)][cols].dropna(
         subset=[c for c in cols if c != "dtfp"])
     # Trim extreme growth episodes (wars, commodity collapses) at the 1st/99th percentiles.
@@ -107,22 +111,46 @@ def load_mys():
     return pd.concat([m, ext], ignore_index=True)
 
 
+def screen_adoption(df):
+    """Flag implausible values and jumps in the ITU adoption series (set to missing).
+
+    Rules: internet share outside [0, 100] or a year-on-year change above 25 points; mobile
+    subscriptions above 250 per 100 people or a change above 100 per 100; broadband above 60 per
+    100 or a change above 20 per 100.  The flagged country-years are written to a log.
+    """
+    rules = {"internet": (100, 25), "mobile": (250, 100), "broadband": (60, 20)}
+    log = []
+    g = df.groupby("iso", group_keys=False)
+    for c, (cap, jump) in rules.items():
+        d = g[c].diff().abs()
+        bad = (df[c] > cap) | (df[c] < 0) | (d > jump)
+        for _, r in df[bad].iterrows():
+            log.append({"iso": r["iso"], "year": int(r["year"]), "series": c, "value": r[c]})
+        df.loc[bad, c + "_scr"] = np.nan
+        df.loc[~bad, c + "_scr"] = df.loc[~bad, c]
+    pd.DataFrame(log).to_csv(OUT / "screening_log.csv", index=False)
+    return df
+
+
 def build_wdi():
     w = RAW / "wdi"
     meta = pd.read_csv(w / "countries.csv")
     df = None
     for f in ["gdp_per_worker", "internet", "mobile", "broadband", "invest", "govcons", "exports",
-              "imports", "popgrowth", "urban", "dependency"]:
+              "imports", "popgrowth", "urban", "dependency", "gdp_pc", "population",
+              "fixed_lines"]:
         x = pd.read_csv(w / f"{f}.csv")
         df = x if df is None else df.merge(x, on=["iso", "year"], how="outer")
     df = df.merge(load_mys(), on=["iso", "year"], how="left")
     df = df.merge(meta[["iso", "country", "income"]], on="iso", how="left")
     df = df.sort_values(["iso", "year"]).reset_index(drop=True)
     fill_pre_rollout(df)
+    df = screen_adoption(df)
 
     g = df.groupby("iso", group_keys=False)
     df["lp"] = np.log(df["gdp_per_worker"])
     df["dlp"] = 100 * g["lp"].diff()
+    df["dgdppc"] = 100 * g["gdp_pc"].apply(lambda s: np.log(s).diff())
     df["open"] = (df["exports"] + df["imports"]) / 100
     df["csh_i"] = df["invest"] / 100
     df["csh_g"] = df["govcons"] / 100
@@ -131,20 +159,65 @@ def build_wdi():
     df["dep"] = df["dependency"] / 100
     df["urb"] = df["urban"] / 100
     for c in ["internet", "mobile", "broadband"]:
-        df[f"{c}_l1"] = g[c].shift(1) / 100.0
-    df["internet_l2"] = g["internet"].shift(2) / 100.0
+        df[f"{c}_l1"] = g[c + "_scr"].shift(1) / 100.0
+        df[f"{c}_raw_l1"] = g[c].shift(1) / 100.0
+    df["internet_l2"] = g["internet_scr"].shift(2) / 100.0
     for c in ["lp", "hc", "csh_i", "csh_g", "open", "dpop", "dep", "urb", "dlp"]:
         df[f"{c}_l1"] = g[c].shift(1)
+    # cumulative growth from t-1 to t+h (local projections), h = 0 is the baseline outcome
+    for h in range(0, 9):
+        df[f"cum{h}"] = 100 * (g["lp"].shift(-h) - df["lp_l1"])
+
+    # predetermined moderators and time-invariant country characteristics
+    early = df[df["year"].between(1991, 1995) & df["lp"].notna()]
+    first_pre = early.sort_values("year").groupby("iso")["lp"].first()
+    first_any = df[df["lp"].notna()].sort_values("year").groupby("iso")["lp"].first()
+    df["lp_init"] = df["iso"].map(first_pre).fillna(df["iso"].map(first_any))
+    df["lp_init_pre"] = df["iso"].isin(first_pre.index)
+    us = df[df["iso"] == "USA"].set_index("year")["lp"]
+    df["dist_us_l1"] = df["lp_l1"] - (df["year"] - 1).map(us)
+    take = df[df["internet_scr"] >= 10].groupby("iso")["year"].min()
+    df["ysince_l1"] = (df["year"] - 1) - df["iso"].map(take)
+    fl90 = df[df["year"] == 1990].set_index("iso")["fixed_lines"]
+    df["fixed90"] = df["iso"].map(fl90) / 100.0
+    for f, col in [("spi", "spi"), ("lays", "lays")]:
+        x = pd.read_csv(w / f"{f}.csv").groupby("iso")[col].mean()
+        df[col + "_mean"] = df["iso"].map(x)
+    fuel = pd.read_csv(w / "fuel_exports.csv")
+    ores = pd.read_csv(w / "ores_exports.csv")
+    fo = (fuel[fuel["year"] >= 1996].groupby("iso")["fuel_exports"].mean().add(
+        ores[ores["year"] >= 1996].groupby("iso")["ores_exports"].mean(), fill_value=0))
+    df["resource_share"] = df["iso"].map(fo)
 
     cols = ["iso", "country", "income", "year", "dlp", "internet_l1", "internet_l2", "mobile_l1",
             "broadband_l1", "lp_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1",
             "dep_l1", "urb_l1", "dlp_l1"]
-    panel = df[(df["year"] >= START) & (df["year"] <= WDI_END)][cols].dropna()
-    lo, hi = panel["dlp"].quantile([0.01, 0.99])
-    panel = panel[(panel["dlp"] >= lo) & (panel["dlp"] <= hi)]
+    extra = ["dgdppc", "population", "internet_raw_l1", "mobile_raw_l1", "broadband_raw_l1",
+             "lp_init", "lp_init_pre", "dist_us_l1", "ysince_l1", "fixed90", "spi_mean",
+             "lays_mean", "resource_share"] + [f"cum{h}" for h in range(9)]
+    # panel built from the unscreened adoption series (screening robustness check)
+    raw = df.copy()
+    raw["internet_l1"], raw["mobile_l1"] = raw["internet_raw_l1"], raw["mobile_raw_l1"]
+    raw["broadband_l1"] = raw["broadband_raw_l1"]
+    raw["internet_l2"] = g["internet"].shift(2) / 100.0
+    rb = raw[(raw["year"] >= START) & (raw["year"] <= WDI_END)][cols + extra].dropna(subset=cols)
+    lo_r, hi_r = rb["dlp"].quantile([0.01, 0.99])
+    rb = rb[(rb["dlp"] >= lo_r) & (rb["dlp"] <= hi_r)]
+    rb = rb[rb.groupby("iso")["year"].transform("size") >= 15]
+    rb.reset_index(drop=True).to_csv(OUT / "panel_unscreened.csv", index=False)
+
+    base = df[(df["year"] >= START) & (df["year"] <= WDI_END)][cols + extra].dropna(subset=cols)
+    # untrimmed panel (same country rule) for the trimming check
+    nu = base.groupby("iso")["year"].transform("size")
+    base[nu >= 15].reset_index(drop=True).to_csv(OUT / "panel_untrimmed.csv", index=False)
+    lo, hi = base["dlp"].quantile([0.01, 0.99])
+    panel = base[(base["dlp"] >= lo) & (base["dlp"] <= hi)]
     n = panel.groupby("iso")["year"].transform("size")
     panel = panel[n >= 15].reset_index(drop=True)
     panel.to_csv(OUT / "panel.csv", index=False)
+    # WDI economies absent from the sample, by income group (coverage diagnostic)
+    meta[["iso", "country", "income"]].assign(in_sample=meta["iso"].isin(panel["iso"])).to_csv(
+        OUT / "coverage.csv", index=False)
     return panel
 
 

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "panel-dose"
+version = "0.2.0"
+description = "Debiased orthogonal sieve estimator for heterogeneous effects of continuous treatments in fixed-effects panels"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "Quang-Vinh Dang", email = "vinh.dq4@buv.edu.vn"}]
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn"]
+
+[tool.setuptools]
+package-dir = {"" = "code"}
+py-modules = ["panel_dose"]

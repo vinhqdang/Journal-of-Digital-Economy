@@ -1,6 +1,9 @@
 """Download the World Development Indicators series used in the 1996-2025 panel.
 
 Series are saved as long CSV files in data/raw/wdi/ so that the analysis can be rerun offline.
+Files that already exist are not downloaded again, so the archived snapshot in data/raw/wdi/
+(retrieved from the World Bank API in September 2026, July 2026 WDI release) is used by default;
+data/raw/wdi/SHA256SUMS lists its checksums.
 """
 import json
 import time
@@ -26,6 +29,14 @@ INDICATORS = {
     "SP.POP.GROW": "popgrowth",                # population growth, %
     "SP.URB.TOTL.IN.ZS": "urban",              # urban population, % total
     "SP.POP.DPND": "dependency",               # age dependency ratio, % working-age population
+    # robustness and diagnostic series
+    "NY.GDP.PCAP.KD": "gdp_pc",                # GDP per capita, constant 2015 US$
+    "SP.POP.TOTL": "population",               # total population
+    "IQ.SPI.OVRL": "spi",                      # Statistical Performance Indicators, overall score
+    "TX.VAL.FUEL.ZS.UN": "fuel_exports",       # fuel exports, % of merchandise exports
+    "TX.VAL.MMTL.ZS.UN": "ores_exports",       # ores and metals exports, % of merchandise exports
+    "IT.MLT.MAIN.P2": "fixed_lines",           # fixed telephone subscriptions per 100 people
+    "HD.HCI.LAYS": "lays",                     # learning-adjusted years of schooling
 }
 
 
@@ -54,11 +65,19 @@ def main():
         f = OUT / f"{name}.csv"
         if f.exists():
             continue
-        d = get(f"{API}/country/all/indicator/{code}?format=json&per_page=20000&date=1990:2025")
+        d = get(f"{API}/country/all/indicator/{code}?format=json&per_page=20000&date=1985:2025")
         rows = [(r["countryiso3code"], int(r["date"]), r["value"]) for r in d[1]
                 if r["value"] is not None and r["countryiso3code"] in set(meta["iso"])]
         pd.DataFrame(rows, columns=["iso", "year", name]).to_csv(f, index=False)
         print(code, len(rows))
+    write_checksums()
+
+
+def write_checksums():
+    import hashlib
+    lines = [f"{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}"
+             for f in sorted(OUT.glob("*.csv"))]
+    (OUT / "SHA256SUMS").write_text("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":

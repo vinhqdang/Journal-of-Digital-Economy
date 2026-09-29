@@ -1,35 +1,12 @@
-\multicolumn{7}{l}{\textit{Design: constant $\theta(z)$}}\\
-\quad TWFE & 0.631 & 0.631 & 0.631 & 0.640 & 0.00 & --\\
-\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
-\quad FE-DML (constant) & \textbf{0.074} & 0.057 & 0.057 & 0.090 & 0.91 & --\\
-\quad FE-DML + R-learner & 0.572 & 0.051 & 0.059 & 0.097 & -- & --\\
-\quad Pooled DML-sieve & 0.632 & 0.604 & 0.602 & 0.610 & 0.12 & --\\
-\quad Panel-DOSE (unpenalised) & 0.258 & 0.054 & 0.057 & 0.094 & 0.93 & 0.88\\
-\quad Panel-DOSE & 0.151 & 0.053 & 0.057 & 0.091 & 0.92 & 0.88\\
-\addlinespace
-\multicolumn{7}{l}{\textit{Design: linear $\theta(z)$}}\\
-\quad TWFE & 0.936 & 0.572 & 0.525 & 0.538 & 0.20 & --\\
-\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
-\quad FE-DML (constant) & 0.742 & 0.057 & 0.010 & 0.073 & 0.14 & --\\
-\quad FE-DML + R-learner & 0.587 & 0.054 & 0.056 & 0.100 & -- & --\\
-\quad Pooled DML-sieve & 0.651 & 0.616 & 0.610 & 0.619 & 0.13 & --\\
-\quad Panel-DOSE (unpenalised) & 0.265 & 0.059 & 0.059 & 0.095 & 0.94 & 0.86\\
-\quad Panel-DOSE & \textbf{0.160} & 0.056 & 0.058 & 0.093 & 0.91 & 0.86\\
-\addlinespace
-\multicolumn{7}{l}{\textit{Design: threshold $\theta(z)$}}\\
-\quad TWFE & 1.153 & 0.599 & 0.537 & 0.551 & 0.13 & --\\
-\quad TWFE-interaction & 0.870 & 0.656 & 0.708 & 0.718 & 0.16 & --\\
-\quad FE-DML (constant) & 0.986 & 0.069 & 0.007 & 0.079 & 0.07 & --\\
-\quad FE-DML + R-learner & 0.590 & 0.059 & 0.063 & 0.106 & -- & --\\
-\quad Pooled DML-sieve & 0.681 & 0.630 & 0.623 & 0.632 & 0.19 & --\\
-\quad Panel-DOSE (unpenalised) & 0.268 & 0.065 & 0.064 & 0.101 & 0.93 & 0.83\\
-\quad Panel-DOSE & \textbf{0.231} & 0.064 & 0.068 & 0.101 & 0.84 & 0.70\\
-\addlinespace
-\multicolumn{7}{l}{\textit{Design: hump $\theta(z)$}}\\
-\quad TWFE & 1.051 & 0.959 & 0.839 & 0.847 & 0.00 & --\\
-\quad TWFE-interaction & 0.829 & 0.772 & 0.741 & 0.749 & 0.04 & --\\
-\quad FE-DML (constant) & 0.494 & 0.239 & 0.119 & 0.139 & 0.30 & --\\
-\quad FE-DML + R-learner & 0.576 & 0.059 & 0.065 & 0.100 & -- & --\\
-\quad Pooled DML-sieve & 0.701 & 0.652 & 0.615 & 0.623 & 0.12 & --\\
-\quad Panel-DOSE (unpenalised) & 0.258 & 0.048 & 0.044 & 0.088 & 0.94 & 0.87\\
-\quad Panel-DOSE & \textbf{0.210} & 0.071 & 0.055 & 0.091 & 0.89 & 0.77\\
+TWFE & 0.63 & 0.94 & 1.15 & 1.05 & 0.63 & 0.57 & 0.60 & 0.96 & 0.00 & 1.41 & 2.07 & 0.17\\
+TWFE-interaction & 0.83 & 0.83 & 0.87 & 0.83 & 0.77 & 0.77 & 0.66 & 0.77 & 0.52 & 0.52 & 0.73 & 0.52\\
+TWFE-spline & 0.29 & 0.29 & 0.29 & 0.29 & 0.23 & 0.23 & 0.23 & 0.23 & 0.16 & 0.16 & 0.16 & 0.16\\
+FE-DML (constant) & \textbf{0.07} & 0.74 & 0.99 & 0.49 & 0.06 & 0.06 & 0.07 & 0.24 & 0.00 & 1.41 & 2.07 & 0.17\\
+FE-DML + R-learner (tuned) & 0.24 & 0.28 & 0.28 & 0.30 & 0.06 & 0.06 & 0.06 & 0.10 & 0.16 & 0.31 & 0.37 & 0.19\\
+WG-DML sieve & 0.61 & 0.74 & 0.70 & 0.92 & 0.53 & 0.45 & 0.48 & 0.81 & 0.40 & 0.78 & 0.68 & 0.31\\
+Pooled DML-sieve & 0.63 & 0.64 & 0.68 & 0.71 & 0.60 & 0.61 & 0.63 & 0.66 & 0.27 & 0.29 & 0.30 & 0.28\\
+Ablation: Mundlak only & 0.18 & 0.18 & 0.25 & 0.25 & 0.10 & 0.07 & 0.07 & 0.14 & 0.21 & 0.24 & 0.25 & 0.22\\
+Ablation: within only & 0.44 & 0.45 & 0.49 & 0.52 & 0.41 & 0.41 & 0.42 & 0.46 & 0.25 & 0.27 & 0.28 & 0.25\\
+Panel-DOSE (unpenalised) & 0.26 & 0.26 & 0.27 & 0.26 & 0.05 & 0.06 & 0.07 & 0.05 & 0.20 & 0.22 & 0.22 & 0.20\\
+Panel-DOSE & 0.15 & 0.15 & 0.23 & 0.22 & 0.05 & 0.06 & 0.06 & 0.08 & 0.19 & 0.20 & 0.22 & 0.20\\
+Panel-DOSE (oracle nuisance) & 0.12 & 0.12 & 0.20 & 0.18 & 0.00 & 0.00 & -0.00 & 0.03 & 0.18 & 0.18 & 0.19 & 0.18\\

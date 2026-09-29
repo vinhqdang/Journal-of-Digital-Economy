@@ -1,0 +1,218 @@
+iso,country,income,in_sample
+ABW,Aruba,High income,False
+AFG,Afghanistan,Low income,False
+AGO,Angola,Lower middle income,True
+ALB,Albania,Upper middle income,True
+AND,Andorra,High income,False
+ARE,United Arab Emirates,High income,True
+ARG,Argentina,Upper middle income,True
+ARM,Armenia,Upper middle income,True
+ASM,American Samoa,High income,False
+ATG,Antigua and Barbuda,High income,False
+AUS,Australia,High income,True
+AUT,Austria,High income,True
+AZE,Azerbaijan,Upper middle income,True
+BDI,Burundi,Low income,False
+BEL,Belgium,High income,True
+BEN,Benin,Lower middle income,True
+BFA,Burkina Faso,Low income,True
+BGD,Bangladesh,Lower middle income,True
+BGR,Bulgaria,High income,True
+BHR,Bahrain,High income,True
+BHS,"Bahamas, The",High income,True
+BIH,Bosnia and Herzegovina,Upper middle income,True
+BLR,Belarus,Upper middle income,True
+BLZ,Belize,Upper middle income,True
+BMU,Bermuda,High income,False
+BOL,Bolivia,Lower middle income,True
+BRA,Brazil,Upper middle income,True
+BRB,Barbados,High income,False
+BRN,Brunei Darussalam,High income,True
+BTN,Bhutan,Lower middle income,False
+BWA,Botswana,Upper middle income,True
+CAF,Central African Republic,Low income,True
+CAN,Canada,High income,True
+CHE,Switzerland,High income,True
+CHI,Channel Islands,High income,False
+CHL,Chile,High income,True
+CHN,China,Upper middle income,True
+CIV,Cote d'Ivoire,Lower middle income,False
+CMR,Cameroon,Lower middle income,True
+COD,"Congo, Dem. Rep.",Low income,True
+COG,"Congo, Rep.",Lower middle income,True
+COL,Colombia,Upper middle income,True
+COM,Comoros,Lower middle income,True
+CPV,Cabo Verde,Upper middle income,True
+CRI,Costa Rica,High income,True
+CUB,Cuba,Upper middle income,False
+CUW,Curacao,High income,False
+CYM,Cayman Islands,High income,False
+CYP,Cyprus,High income,True
+CZE,Czechia,High income,True
+DEU,Germany,High income,True
+DJI,Djibouti,Lower middle income,False
+DMA,Dominica,Upper middle income,False
+DNK,Denmark,High income,True
+DOM,Dominican Republic,Upper middle income,True
+DZA,Algeria,Upper middle income,True
+ECU,Ecuador,Upper middle income,True
+EGY,"Egypt, Arab Rep.",Lower middle income,True
+ERI,Eritrea,Low income,False
+ESP,Spain,High income,True
+EST,Estonia,High income,True
+ETH,Ethiopia,Low income,False
+FIN,Finland,High income,True
+FJI,Fiji,Upper middle income,True
+FRA,France,High income,True
+FRO,Faroe Islands,High income,False
+FSM,"Micronesia, Fed. Sts.",Upper middle income,False
+GAB,Gabon,Upper middle income,True
+GBR,United Kingdom,High income,True
+GEO,Georgia,Upper middle income,True
+GHA,Ghana,Lower middle income,True
+GIB,Gibraltar,High income,False
+GIN,Guinea,Lower middle income,True
+GMB,"Gambia, The",Low income,True
+GNB,Guinea-Bissau,Low income,True
+GNQ,Equatorial Guinea,Upper middle income,False
+GRC,Greece,High income,True
+GRD,Grenada,Upper middle income,False
+GRL,Greenland,High income,False
+GTM,Guatemala,Upper middle income,True
+GUM,Guam,High income,False
+GUY,Guyana,High income,False
+HKG,"Hong Kong SAR, China",High income,True
+HND,Honduras,Lower middle income,True
+HRV,Croatia,High income,True
+HTI,Haiti,Lower middle income,True
+HUN,Hungary,High income,True
+IDN,Indonesia,Upper middle income,True
+IMN,Isle of Man,High income,False
+IND,India,Lower middle income,True
+IRL,Ireland,High income,True
+IRN,"Iran, Islamic Rep.",Upper middle income,True
+IRQ,Iraq,Upper middle income,False
+ISL,Iceland,High income,True
+ISR,Israel,High income,True
+ITA,Italy,High income,True
+JAM,Jamaica,Upper middle income,False
+JOR,Jordan,Upper middle income,False
+JPN,Japan,High income,True
+KAZ,Kazakhstan,Upper middle income,True
+KEN,Kenya,Lower middle income,True
+KGZ,Kyrgyz Republic,Lower middle income,True
+KHM,Cambodia,Lower middle income,True
+KIR,Kiribati,Lower middle income,False
+KNA,St. Kitts and Nevis,High income,False
+KOR,"Korea, Rep.",High income,True
+KWT,Kuwait,High income,True
+LAO,Lao PDR,Lower middle income,True
+LBN,Lebanon,Lower middle income,False
+LBR,Liberia,Low income,False
+LBY,Libya,Upper middle income,False
+LCA,St. Lucia,Upper middle income,False
+LIE,Liechtenstein,High income,False
+LKA,Sri Lanka,Upper middle income,True
+LSO,Lesotho,Lower middle income,True
+LTU,Lithuania,High income,True
+LUX,Luxembourg,High income,True
+LVA,Latvia,High income,True
+MAC,"Macao SAR, China",High income,False
+MAF,St. Martin (French part),High income,False
+MAR,Morocco,Lower middle income,True
+MCO,Monaco,High income,False
+MDA,Moldova,Upper middle income,True
+MDG,Madagascar,Low income,True
+MDV,Maldives,Upper middle income,False
+MEX,Mexico,Upper middle income,True
+MHL,Marshall Islands,Upper middle income,False
+MKD,North Macedonia,Upper middle income,True
+MLI,Mali,Low income,True
+MLT,Malta,High income,True
+MMR,Myanmar,Lower middle income,False
+MNE,Montenegro,Upper middle income,True
+MNG,Mongolia,Upper middle income,True
+MNP,Northern Mariana Islands,High income,False
+MOZ,Mozambique,Low income,True
+MRT,Mauritania,Lower middle income,True
+MUS,Mauritius,Upper middle income,True
+MWI,Malawi,Low income,False
+MYS,Malaysia,Upper middle income,True
+NAM,Namibia,Lower middle income,True
+NCL,New Caledonia,High income,False
+NER,Niger,Low income,True
+NGA,Nigeria,Lower middle income,False
+NIC,Nicaragua,Lower middle income,True
+NLD,Netherlands,High income,True
+NOR,Norway,High income,True
+NPL,Nepal,Lower middle income,True
+NRU,Naoero,High income,False
+NZL,New Zealand,High income,True
+OMN,Oman,High income,True
+PAK,Pakistan,Lower middle income,True
+PAN,Panama,High income,True
+PER,Peru,Upper middle income,True
+PHL,Philippines,Upper middle income,True
+PLW,Palau,High income,False
+PNG,Papua New Guinea,Lower middle income,False
+POL,Poland,High income,True
+PRI,Puerto Rico (US),High income,False
+PRK,"Korea, Dem. People's Rep.",Low income,False
+PRT,Portugal,High income,True
+PRY,Paraguay,Upper middle income,True
+PSE,West Bank and Gaza,Lower middle income,False
+PYF,French Polynesia,High income,False
+QAT,Qatar,High income,True
+ROU,Romania,High income,True
+RUS,Russian Federation,High income,True
+RWA,Rwanda,Low income,True
+SAU,Saudi Arabia,High income,True
+SDN,Sudan,Low income,False
+SEN,Senegal,Lower middle income,True
+SGP,Singapore,High income,True
+SLB,Solomon Islands,Lower middle income,True
+SLE,Sierra Leone,Low income,True
+SLV,El Salvador,Upper middle income,True
+SMR,San Marino,High income,False
+SOM,"Somalia, Fed. Rep.",Low income,False
+SRB,Serbia,Upper middle income,True
+SSD,South Sudan,Low income,False
+STP,Sao Tome and Principe,Lower middle income,True
+SUR,Suriname,Upper middle income,False
+SVK,Slovak Republic,High income,True
+SVN,Slovenia,High income,True
+SWE,Sweden,High income,True
+SWZ,Eswatini,Lower middle income,False
+SXM,Sint Maarten (Dutch part),High income,False
+SYC,Seychelles,High income,False
+SYR,Syrian Arab Republic,Low income,False
+TCA,Turks and Caicos Islands,High income,False
+TCD,Chad,Low income,True
+TGO,Togo,Lower middle income,True
+THA,Thailand,Upper middle income,True
+TJK,Tajikistan,Lower middle income,True
+TKM,Turkmenistan,Upper middle income,False
+TLS,Timor-Leste,Lower middle income,False
+TON,Tonga,Upper middle income,True
+TTO,Trinidad and Tobago,High income,False
+TUN,Tunisia,Lower middle income,True
+TUR,Turkiye,Upper middle income,True
+TUV,Tuvalu,Upper middle income,False
+TZA,Tanzania,Lower middle income,True
+UGA,Uganda,Low income,True
+UKR,Ukraine,Upper middle income,True
+URY,Uruguay,High income,True
+USA,United States,High income,True
+UZB,Uzbekistan,Lower middle income,True
+VCT,St. Vincent and the Grenadines,Upper middle income,False
+VEN,"Venezuela, RB",Lower middle income,False
+VGB,British Virgin Islands,High income,False
+VIR,Virgin Islands (U.S.),High income,False
+VNM,Viet Nam,Upper middle income,True
+VUT,Vanuatu,Lower middle income,False
+WSM,Samoa,Upper middle income,False
+XKX,Kosovo,Upper middle income,False
+YEM,"Yemen, Rep.",Low income,False
+ZAF,South Africa,Upper middle income,True
+ZMB,Zambia,Lower middle income,True
+ZWE,Zimbabwe,Lower middle income,True

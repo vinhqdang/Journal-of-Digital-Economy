@@ -1,7 +1,7 @@
 Highlights
 
-- Panel-DOSE estimates how digital adoption effects vary with country traits
-- Combines Mundlak features, country cross-fitting and a penalised spline sieve
-- Its moment is orthogonal and invariant to additive fixed-effect nuisance errors
-- Simulations: lowest error in all non-constant designs against TWFE and ML rivals
-- 141 countries, 1996-2025: no aggregate internet dividend in productivity growth
+- Within countries, internet diffusion is not followed by faster productivity growth
+- No robust variation with schooling, initial productivity or years since take-off
+- Development gradient shrinks by two thirds between PWT 10.0 and 11.0 releases
+- Panel-DOSE: debiased spline estimator for heterogeneous effects in FE panels
+- Stylised and plasmode simulations show where the flexible estimator helps

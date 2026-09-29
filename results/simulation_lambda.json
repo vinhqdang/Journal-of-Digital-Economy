@@ -1,0 +1,10 @@
+{
+ "reps": 100,
+ "lambda_at_max": 0.2675,
+ "lambda_zero": 0.0,
+ "edf_mean": 3.363905362482028,
+ "p_const_reject_constant": 0.09,
+ "p_const_reject_linear": 1.0,
+ "p_const_reject_threshold": 1.0,
+ "p_const_reject_hump": 0.94
+}
