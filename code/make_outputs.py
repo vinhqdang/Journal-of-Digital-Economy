@@ -22,7 +22,7 @@ plt.rcParams.update({"font.family": "serif", "font.size": 9, "axes.spines.top": 
 C_MAIN, C_ALT, C_GREY, C_3 = "#1f4e79", "#c0504d", "#7f7f7f", "#9bbb59"
 
 ORDER = ["TWFE", "TWFE-interaction", "TWFE-spline", "FE-DML (constant)",
-         "FE-DML + R-learner (tuned)", "WG-DML sieve", "Pooled DML-sieve",
+         "FE-DML + R-learner (tuned)", "WG-DML sieve", "Pooled DML sieve",
          "Ablation: Mundlak only", "Ablation: within only", "Panel-DOSE (unpenalised)",
          "Panel-DOSE", "Panel-DOSE (oracle nuisance)"]
 SHAPES = ["constant", "linear", "threshold", "hump"]
@@ -78,7 +78,7 @@ def sim_tables():
     (TAB / "sim_main.tex").write_text("\n".join(lines) + "\n")
 
     inf_methods = ["TWFE-interaction", "TWFE-spline", "FE-DML (constant)", "WG-DML sieve",
-                   "Pooled DML-sieve", "Ablation: Mundlak only", "Ablation: within only",
+                   "Pooled DML sieve", "Ablation: Mundlak only", "Ablation: within only",
                    "Panel-DOSE (unpenalised)", "Panel-DOSE", "Panel-DOSE (oracle nuisance)"]
     lines = []
     for sh in SHAPES:
@@ -100,7 +100,7 @@ def sim_tables():
         vals = [sens[(sens["N"] == n) & (sens["rho"] == r) & (sens["method"] == mth)]["irmse"].mean()
                 for n, r in cells]
         lines.append(f"\\quad {mth} & " + " & ".join(fmt(v) for v in vals) + r"\\")
-    for lab, col in [("Pointwise coverage", "cover"), ("Uniform coverage", "ucover"),
+    for lab, col in [("Pointwise coverage", "cover"), ("Simultaneous coverage", "ucover"),
                      ("Coverage of high--low contrast", "contrast_cover")]:
         lines.append(r"\addlinespace\multicolumn{7}{l}{\textit{" + lab + r"}}\\")
         for mth in ["TWFE-interaction", "Panel-DOSE (unpenalised)", "Panel-DOSE"]:
@@ -129,7 +129,7 @@ def sim_figures(agg):
     fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.8), sharey=True)
     short = {"TWFE": "TWFE", "TWFE-interaction": "TWFE-int", "TWFE-spline": "TWFE-spline",
              "FE-DML (constant)": "FE-DML", "FE-DML + R-learner (tuned)": "R-learner",
-             "WG-DML sieve": "WG-sieve", "Pooled DML-sieve": "Pooled",
+             "WG-DML sieve": "WG-sieve", "Pooled DML sieve": "Pooled",
              "Ablation: Mundlak only": "Mundlak only", "Ablation: within only": "Within only",
              "Panel-DOSE (unpenalised)": "DOSE-u", "Panel-DOSE": "DOSE",
              "Panel-DOSE (oracle nuisance)": "Oracle"}
@@ -182,7 +182,8 @@ def plasmode_table():
     main, app = [], []
     for zn, zl in MODLAB.items():
         main.append(r"\multicolumn{9}{l}{\textit{Moderator: " + zl + r"}}\\")
-        app.append(r"\multicolumn{5}{l}{\textit{Moderator: " + zl + r"}}\\")
+        if zn != "ysince_l1":
+            app.append(r"\multicolumn{5}{l}{\textit{Moderator: " + zl + r"}}\\")
         for sh in ["null", "linear", "threshold"]:
             for mth in ["Panel-DOSE", "Panel-DOSE (unpenalised)"]:
                 s = p[(p["moderator"] == zn) & (p["shape"] == sh) & (p["method"] == mth)]
@@ -200,7 +201,8 @@ def plasmode_table():
                          cov_cell(s["diff_cover"]), cov_cell(s["reject_diff"])]
                 app.append(f"\\quad {SHLAB[sh]}, {mth} & " + " & ".join(cells) + r"\\")
         main.append(r"\addlinespace")
-        app.append(r"\addlinespace")
+        if zn != "ysince_l1":
+            app.append(r"\addlinespace")
     (TAB / "plasmode.tex").write_text("\n".join(main[:-1]) + "\n")
     (TAB / "plasmode_twfe.tex").write_text("\n".join(app[:-1]) + "\n")
     return p
@@ -208,14 +210,13 @@ def plasmode_table():
 
 # ----------------------------------------------------------------------------- empirical
 MAIN_ROWS = {
-    "A": ["Baseline", "Common sample of the earlier version", "Adding mobile and broadband",
-          "Random forest nuisance", "Region-by-year effects", "Pre-COVID sample, 1996-2019",
-          "PWT 11.0, 1996-2023", "PWT 10.0, 1996-2019"],
-    "B": ["Baseline", "Common sample of the earlier version", "Adding mobile and broadband",
-          "Random forest nuisance", "Region-by-year effects", "Pre-COVID sample, 1996-2019",
+    "A": ["Baseline", "Complete-ICT sample", "Country-specific linear trends",
+          "Excluding transition economies", "Period 1996-2011", "Period 2012-2025",
+          "Adding mobile and broadband", "PWT 11.0, 1996-2023", "PWT 10.0, 1996-2019"],
+    "B": ["Baseline", "Complete-ICT sample", "Country-specific linear trends",
+          "Excluding transition economies", "Period 1996-2011", "Period 2012-2025",
           "WDI data, PWT 11.0 countries, 1996-2023", "PWT 11.0, 1996-2023", "PWT 10.0, 1996-2019"],
-    "C": ["Baseline", "Common sample of the earlier version", "Random forest nuisance",
-          "Region-by-year effects", "Predetermined moderator (zero before take-off)"],
+    "C": ["Baseline", "Complete-ICT sample", "Predetermined moderator (zero before take-off)"],
 }
 PANEL_TITLES = {"A": "Panel A. Moderator: mean years of schooling",
                 "B": "Panel B. Moderator: initial log GDP per worker",
@@ -252,7 +253,7 @@ def emp_tables(summ, reps):
                 if n not in sub.index:
                     continue
                 cells, se = emp_row(sub.loc[n])
-                mark = SPLITS3 if reps.get((P, n), 5) == 3 else ""
+                mark = SPLITS3 if reps.get((P, n), 20) == 10 else ""
                 lines.append(f"\\quad {spec_label(n)}{mark} & " + " & ".join(cells) + r"\\")
                 lines.append(" & " + " & ".join(se) + r"\\")
             lines.append(r"\addlinespace")
@@ -262,16 +263,17 @@ def emp_tables(summ, reps):
     rest = {P: [s for s in summ[summ["panel"] == P]["spec"] if s not in MAIN_ROWS.get(P, [])]
             for P in ["A", "B", "C"]}
     write("emp_appendix_a.tex", rest, ("A",))
-    write("emp_appendix_bc.tex", rest, ("B", "C"))
+    write("emp_appendix_b.tex", rest, ("B",))
+    write("emp_appendix_c.tex", rest, ("C",))
 
     # diagnostics: penalty, identifying variation, support
     lines = []
-    for P, n in [("A", "Baseline"), ("A", "Common sample of the earlier version"),
-                 ("B", "Baseline"), ("B", "Common sample of the earlier version"),
+    for P, n in [("A", "Baseline"), ("A", "Complete-ICT sample"),
+                 ("B", "Baseline"), ("B", "Complete-ICT sample"),
                  ("C", "Baseline")]:
         r = summ[(summ["panel"] == P) & (summ["spec"] == n)].iloc[0]
         lab = "Baseline" if n == "Baseline" else "Common sample"
-        lines.append(f"{P}: {lab} & {r['lambda']:.3g} & {r.edf:.1f} & {r.idvar_all:.2f} & "
+        lines.append(f"{P}: {lab} & {lam_cell(r['lambda'])} & {r.edf:.1f} & {r.idvar_all:.2f} & "
                      f"{r.idvar_low:.2f} / {r.idvar_mid:.2f} / {r.idvar_high:.2f} & "
                      f"{r.d_median_low:.2f} / {r.d_median_mid:.2f} / {r.d_median_high:.2f} & "
                      f"{r.d_within_sd_low:.2f} / {r.d_within_sd_mid:.2f} / {r.d_within_sd_high:.2f} & "
@@ -316,30 +318,158 @@ def dyn_tables(summ, ex):
 
 
 def lam_cell(x):
-    return "$10^{4}$" if x >= 1e4 - 1 else f"{x:.3g}"
+    k = np.log10(x) if x > 0 else 0.5
+    if x >= 100 and abs(k - round(k)) < 1e-6:
+        return f"$10^{{{int(round(k))}}}$"
+    return f"{x:,.0f}" if x >= 100 else f"{x:.3g}"
 
 
-def vintage_table():
-    f = RES / "vintage.json"
+SRC = {"pwt": ("PWT 10.0", "PWT 11.0"), "wdi": ("WDI", "PWT 11.0")}
+
+
+def compare_tables():
+    """Component-replacement tables for the two source comparisons (tab:vintage)."""
+    out = {}
+    for kind in ["wdi", "pwt"]:
+        f = RES / f"compare_{kind}.json"
+        if not f.exists():
+            continue
+        v = json.load(open(f))
+        out[kind] = v
+        na, nb = SRC[kind]
+        name = {"a": na, "b": nb}
+        lines = []
+        for r in v["configs"]:
+            lines.append(f"{name[r['y']]} & {name[r['z']]} & {name[r['x']]} & "
+                         f"${r['diff']:.2f}{pstar(r['diff'], r['diff_se'])}$ & ({r['diff_se']:.2f}) & "
+                         f"{lam_cell(r['lambda'])} & ${r['fixed_diff']:.2f}{pstar(r['fixed_diff'], r['fixed_diff_se'])}$ & "
+                         f"({r['fixed_diff_se']:.2f})\\\\")
+        sf, sx = v["shapley_full"], v["shapley_fixed"]
+        lines.append(r"\addlinespace")
+        lines.append(r"\multicolumn{8}{l}{\textit{Shapley attribution of the change (" + nb + r" $-$ " + na + r")}}\\")
+        for lab, x1, x2 in [("Outcome", sf["outcome"], sx["outcome"]),
+                            ("Moderator", sf["moderator"], sx["moderator"]),
+                            ("Controls", sf["controls"], sx["controls"]),
+                            ("Total", v["total_full"], v["total_fixed"])]:
+            lines.append(f"\\quad {lab} & & & ${x1:.2f}$ & & & ${x2:.2f}$ & \\\\")
+        d = v["difference"]
+        lo, hi = d["boot_ci_basic"]
+        lines.append(r"\addlinespace")
+        lines.append(f"\\multicolumn{{8}}{{l}}{{Difference {na} $-$ {nb}: ${d['est']:.2f}$; paired bootstrap s.e.\\ ${d['boot_se']:.2f}$, "
+                     f"95\\% interval $[{lo:.2f},{hi:.2f}]$}}\\\\")
+        sd = np.array(v["seeds"]["diff"])
+        lines.append(f"\\multicolumn{{8}}{{l}}{{Across {len(sd)} split seeds: difference from ${sd.min():.2f}$ to ${sd.max():.2f}$; "
+                     f"leave-one-country-out: ${v['loco']['range'][0]:.2f}$ to ${v['loco']['range'][1]:.2f}$}}\\\\")
+        (TAB / f"emp_compare_{kind}.tex").write_text("\n".join(lines) + "\n")
+    return out
+
+
+def source_diagnostics():
+    """Agreement of WDI and PWT growth rates on common country-years (tab:srcdiag)."""
+    from panel_dose import within_two_way
+    w = pd.read_csv(ROOT / "data" / "processed" / "panel.csv")
+    rows, out = [], {}
+    for lab, f in [("PWT 11.0", "panel_pwt11.csv"), ("PWT 10.0", "panel_pwt.csv")]:
+        p = pd.read_csv(ROOT / "data" / "processed" / f)
+        c = w[["iso", "year", "dlp", "dgdp", "demp", "lp_init"]].merge(
+            p[["iso", "year", "dlp", "dgdp", "demp", "lp_init"]], on=["iso", "year"],
+            suffixes=("_w", "_p")).dropna()
+        cw = lambda a, b: float(np.corrcoef(within_two_way(c[a].values, c["iso"], c["year"]),  # noqa
+                                            within_two_way(c[b].values, c["iso"], c["year"]))[0, 1])
+        mean = c.groupby("iso")[["dlp_w", "dlp_p"]].mean()
+        terc = pd.qcut(c.groupby("iso")["lp_init_w"].first(), 3, labels=False)
+        c["t"] = c["iso"].map(terc)
+        by = []
+        for t in [0, 1, 2]:
+            d = c[c["t"] == t]
+            by.append(float(np.corrcoef(within_two_way(d["dlp_w"].values, d["iso"], d["year"]),
+                                        within_two_way(d["dlp_p"].values, d["iso"], d["year"]))[0, 1]))
+        r = {"n": len(c), "countries": int(c["iso"].nunique()),
+             "pooled": float(np.corrcoef(c["dlp_w"], c["dlp_p"])[0, 1]), "within": cw("dlp_w", "dlp_p"),
+             "means": float(np.corrcoef(mean["dlp_w"], mean["dlp_p"])[0, 1]),
+             "rank_init": float(c.groupby("iso")[["lp_init_w", "lp_init_p"]].first().rank().corr().iloc[0, 1]),
+             "within_terciles": by, "within_gdp": cw("dgdp_w", "dgdp_p"),
+             "within_emp": cw("demp_w", "demp_p")}
+        out[lab] = r
+        rows.append(f"{lab} & {r['n']:,} & {r['countries']} & {r['pooled']:.2f} & {r['within']:.2f} & "
+                    f"{r['means']:.2f} & {r['rank_init']:.2f} & {by[0]:.2f} / {by[1]:.2f} / {by[2]:.2f} & "
+                    f"{r['within_gdp']:.2f} & {r['within_emp']:.2f}\\\\")
+    (TAB / "source_diag.tex").write_text("\n".join(rows) + "\n")
+    json.dump(out, open(RES / "source_diagnostics.json", "w"), indent=1)
+    return out
+
+
+TWFE_LABELS = [("baseline", "Baseline"), ("linear_trends", "Country-specific linear trends"),
+               ("quadratic_trends", "Country-specific quadratic trends"),
+               ("lagged_productivity", "Adding lagged log productivity"),
+               ("lp_init_tercile_x_year", "Initial-productivity tercile $\\times$ year effects"),
+               ("region_x_year", "Region $\\times$ year effects"),
+               ("period_1996-2011", "Period 1996--2011"), ("period_2012-2025", "Period 2012--2025"),
+               ("no_transition", "Excluding transition economies"),
+               ("outcome_gdp_growth", "Outcome: GDP growth"),
+               ("outcome_employment_growth", "Outcome: employment growth"),
+               ("outcome_emp_rate_growth", "Outcome: growth of employment/population")]
+
+
+def twfe_table(ex):
+    t = ex["twfe_checks"]
+    lines = [f"{lab} & ${t[k][0]:.2f}{pstar(*t[k])}$ & ({t[k][1]:.2f})\\\\" for k, lab in TWFE_LABELS]
+    lt = ex["lead_test"]
+    lines.append(r"\addlinespace")
+    lines.append(r"\multicolumn{3}{l}{\textit{Timing: TWFE, adoption share dated $s$ (common sample, " + f"{lt['timing_n']:,}" + r" obs.)}}\\")
+    for k, (b, se) in lt["timing"].items():
+        off = int(k) - 1          # net_k is the share in year t-1+k
+        lab = "$t$" if off == 0 else f"$t{off:+d}$"
+        lines.append(f"\\quad Share in {lab} & ${b:.2f}{pstar(b, se)}$ & ({se:.2f})\\\\")
+    lines.append(r"\addlinespace")
+    lines.append(f"FE-DML, lead $D_{{t+1}}$ as the only treatment & ${lt['fedml_lead_only']:.2f}{pstar(lt['fedml_lead_only'], lt['fedml_lead_only_se'])}$ & ({lt['fedml_lead_only_se']:.2f})\\\\")
+    lines.append(f"TWFE, lagged change $D_t-D_{{t-1}}$ & ${lt['twfe_change']:.2f}{pstar(lt['twfe_change'], lt['twfe_change_se'])}$ & ({lt['twfe_change_se']:.2f})\\\\")
+    lines.append(f"FE-DML, lagged change $D_t-D_{{t-1}}$ & ${lt['fedml_change']:.2f}{pstar(lt['fedml_change'], lt['fedml_change_se'])}$ & ({lt['fedml_change_se']:.2f})\\\\")
+    (TAB / "twfe_checks.tex").write_text("\n".join(lines) + "\n")
+
+
+def diag_tables():
+    f = RES / "diagnostics.json"
     if not f.exists():
         return None
-    v = json.load(open(f))
-    name = {"10": "10.0", "11": "11.0"}
+    g = json.load(open(f))
     lines = []
-    for r in v["configs"]:
-        lines.append(f"{name[r['y']]} & {name[r['z']]} & {name[r['x']]} & "
-                     f"${r['diff']:.2f}{pstar(r['diff'], r['diff_se'])}$ & ({r['diff_se']:.2f}) & "
-                     f"{lam_cell(r['lambda'])} & ${r['fixed_diff']:.2f}{pstar(r['fixed_diff'], r['fixed_diff_se'])}$ & "
-                     f"({r['fixed_diff_se']:.2f})\\\\")
-    (TAB / "emp_vintage.tex").write_text("\n".join(lines) + "\n")
-    sf, sx = v["shapley_full"], v["shapley_fixed"]
-    lines = [f"{lab} & & & ${a:.2f}$ & & & ${b:.2f}$ & \\\\" for lab, a, b in
-             [("Outcome", sf["outcome"], sx["outcome"]),
-              ("Moderator", sf["moderator"], sx["moderator"]),
-              ("Controls", sf["controls"], sx["controls"]),
-              ("Total", v["total_full"], v["total_fixed"])]]
-    (TAB / "emp_shapley.tex").write_text("\n".join(lines) + "\n")
-    return v
+    for k, v in g["nuisance_fit"].items():
+        learner, tgt = k.split("|")
+        lines.append(f"{learner} & {tgt} & {v['r2']:.2f} & {v['r2_within']:.2f}\\\\")
+    (TAB / "nuisance_fit.tex").write_text("\n".join(lines) + "\n")
+    lines = []
+    for r in g["hyper"]:
+        lines.append(f"{r['panel']} & {r['lr']} & {r['leaves']} & {r['trees']} & ${r['fedml']:.2f}$ & ({r['fedml_se']:.2f}) & "
+                     f"${r['diff']:.2f}$ & ({r['diff_se']:.2f}) & {lam_cell(r['lambda'])}\\\\")
+    (TAB / "hyper.tex").write_text("\n".join(lines) + "\n")
+    return g
+
+
+def spec_curve(summ):
+    """Specification curve of the FE-DML average across the Panel A (schooling) rows."""
+    a = summ[(summ["panel"] == "A")].copy()
+    a = a[~a["spec"].str.contains("TFP|GDP per capita|composite")]
+    a = a.sort_values("fedml").reset_index(drop=True)
+    lo, hi = (a["fedml"] - 1.96 * a["fedml_se"]) / 10, (a["fedml"] + 1.96 * a["fedml_se"]) / 10
+    fig, ax = plt.subplots(figsize=(7.2, 3.4))
+    col = np.where(hi < 0, C_MAIN, C_GREY)
+    ax.vlines(np.arange(len(a)), lo, hi, color=col, lw=1)
+    ax.scatter(np.arange(len(a)), a["fedml"] / 10, color=col, s=12, zorder=3)
+    bi = a.index[a["spec"] == "Baseline"][0]
+    ax.scatter([bi], [a.loc[bi, "fedml"] / 10], color=C_ALT, s=30, zorder=4, label="Baseline")
+    ax.axhline(0, color="k", lw=0.5)
+    ax.set_xticks(np.arange(len(a)))
+    ax.set_xticklabels(a["spec"].str.replace("Excluding the eight countries outside the complete-ICT sample",
+                                             "Excl. eight added countries"), rotation=90, fontsize=5.5)
+    ax.set_ylabel("FE-DML, pp per 10 pp")
+    ax.legend(frameon=False, fontsize=7)
+    fig.tight_layout()
+    fig.savefig(FIG / "spec_curve.pdf")
+    plt.close(fig)
+    return int((hi < 0).sum()), int(len(a))
+
+
 def band(ax, c, color, label, uniform=True, bands=None):
     """Line: estimate in c; shaded bands: from `bands` (the unpenalised sieve) if given."""
     g = np.array(c["grid"])
@@ -362,8 +492,11 @@ def emp_figures(summ, js):
              "(b) by initial productivity"),
             (axes[2], "C|Baseline", "ysince_l1", None, "Years since internet take-off",
              "(c) by years since take-off")]:
-        band(ax, cur[key]["pen"], C_MAIN, "Panel-DOSE")
         c = cur[key]["pen"]
+        if key.startswith("C|"):
+            # years since take-off: show the 5th-95th percentile range (grid points 3-30)
+            c = {k: v[2:31] for k, v in c.items()}
+        band(ax, c, C_MAIN, "Panel-DOSE")
         lo_, hi_ = np.nanmin(c["ulo"]), np.nanmax(c["uhi"])
         pad = 0.05 * (hi_ - lo_)
         ax.set_ylim(lo_ - 2 * pad, hi_ + pad)
@@ -411,7 +544,7 @@ def emp_figures(summ, js):
     axes[0].plot(base["grid"], base["est"], color=C_MAIN, lw=2, label="Baseline")
     # only WDI checks with the same moderator, treatment and outcome as the baseline
     same = [k for k in cur if k.startswith("A|") and k[2:] in ROBUST_SAME]
-    hi_l = {"A|Common sample of the earlier version": ("#e08214", "Common sample"),
+    hi_l = {"A|Complete-ICT sample": ("#e08214", "Complete-ICT sample"),
             "A|Random forest nuisance": ("#5e3c99", "Random-forest nuisance"),
             "A|Region-by-year effects": ("#1b7837", "Region-by-year effects")}
     for k in same:
@@ -425,11 +558,14 @@ def emp_figures(summ, js):
     axes[0].set_ylabel(r"$\hat\theta(z)$")
     axes[0].set_title("(a) schooling: WDI robustness checks", fontsize=9)
     axes[0].axhline(0, color="k", lw=0.5)
-    axes[0].legend(frameon=False, fontsize=6, ncol=2, loc="lower left")
-    pw = {"B|Baseline": df["lp_init"],
+    axes[0].legend(frameon=False, fontsize=7, ncol=2, loc="lower left")
+    wp = df[df["iso"].isin(pd.read_csv(ROOT / "data" / "processed" / "panel_pwt11.csv")["iso"])
+            & (df["year"] <= 2023)]
+    pw = {"B|WDI data, PWT 11.0 countries, 1996-2023": wp["lp_init"],
           "B|PWT 11.0, 1996-2023": pd.read_csv(ROOT / "data" / "processed" / "panel_pwt11.csv")["lp_init"],
           "B|PWT 10.0, 1996-2019": pd.read_csv(ROOT / "data" / "processed" / "panel_pwt.csv")["lp_init"]}
-    for key, col, lab in [("B|Baseline", C_MAIN, "WDI (baseline)"),
+    for key, col, lab in [("B|WDI data, PWT 11.0 countries, 1996-2023", C_MAIN,
+                           "WDI (PWT 11.0 countries, 1996-2023)"),
                           ("B|PWT 11.0, 1996-2023", C_3, "PWT 11.0"),
                           ("B|PWT 10.0, 1996-2019", C_ALT, "PWT 10.0")]:
         c = cur[key]["pen"]
@@ -438,7 +574,7 @@ def emp_figures(summ, js):
         axes[1].fill_between(x, c["lo"], c["hi"], color=col, alpha=0.12, lw=0)
         axes[1].plot(x, c["est"], color=col, lw=1.5, label=lab)
     axes[1].axhline(0, color="k", lw=0.5)
-    axes[1].set_xlabel("Percentile of initial productivity (within sample)")
+    axes[1].set_xlabel("Percentile of initial productivity")
     axes[1].set_title("(b) initial productivity: data sources", fontsize=9)
     axes[1].legend(frameon=False, fontsize=7)
     fig.tight_layout()
@@ -491,10 +627,11 @@ def emp_figures(summ, js):
     (TAB / "descriptives.tex").write_text("\n".join(lines) + "\n")
 
 
-FIVE = {"Baseline", "Common sample of the earlier version", "Original specification",
-        "Adding the investment share", "Adding mobile and broadband",
-        "Treatment: composite ICT index"}
-ROBUST_SAME = ["Common sample of the earlier version", "Adding the investment share",
+MAINSPLIT = {"Baseline", "Complete-ICT sample", "PWT 11.0, 1996-2023", "PWT 10.0, 1996-2019",
+             "WDI data, PWT 11.0 countries, 1996-2023"}
+ROBUST_SAME = ["Complete-ICT sample", "Adding the investment share",
+               "Country-specific linear trends", "Excluding transition economies",
+               "Excluding the eight countries outside the complete-ICT sample",
                "Random forest nuisance", "Region-by-year effects", "Unpenalised sieve",
                "Three interior knots", "GCV penalty", "Pre-COVID sample, 1996-2019",
                "Excluding 2020-2021", "Excluding 2025", "Untrimmed outcome", "Winsorised outcome",
@@ -507,9 +644,9 @@ DOSE_SKIP = 3   # the dose-response figure starts at the fourth grid point (see 
 def emp_outputs():
     summ = pd.read_csv(RES / "empirical_summary.csv")
     js = json.load(open(RES / "empirical.json"))
-    reps = {(r.panel, r.spec): (5 if (r.spec in FIVE and not (r.panel == "C" and r.spec not in
-                                                              ("Baseline", "Common sample of the earlier version")))
-                                else 3) for r in summ.itertuples()}
+    reps = {(r.panel, r.spec): (20 if r.spec in MAINSPLIT and not (
+        r.panel == "C" and r.spec not in ("Baseline", "Complete-ICT sample")) else 10)
+        for r in summ.itertuples()}
     emp_tables(summ, reps)
     dyn_tables(summ, js["extra"])
     emp_figures(summ, js)
@@ -529,11 +666,14 @@ def numbers():
         else:
             pval = k.startswith(("pconst", "plin", "holm", "pdose")) or (k.endswith("p") and d == 2)
             N[k] = f"{v:.3f}" if pval and abs(v) < 0.01 else f"{v:.{d}f}"
+            if pval:  # "= 0.18" or "< 0.001", for use as $p\nm{keyeq}$
+                N[k + "eq"] = "<0.001" if abs(v) < 0.001 else "=" + N[k]
 
     def lamf(x):
-        if x >= 1e4 - 1:
-            return "10^{4}"
-        return f"{x:.3g}"
+        k = np.log10(x) if x > 0 else 0.5
+        if x >= 100 and abs(k - round(k)) < 1e-6:
+            return f"10^{{{int(round(k))}}}"
+        return f"{x:,.0f}".replace(",", "{,}") if x >= 100 else f"{x:.3g}"
 
     summ = pd.read_csv(RES / "empirical_summary.csv")
     js = json.load(open(RES / "empirical.json"))
@@ -561,7 +701,7 @@ def numbers():
     tw = ex["twoway"]["A"]
     put("twse", tw["fedml_se_twoway"]); put("cihitw", (b.fedml + 1.96 * tw["fedml_se_twoway"]) / 10, 3)
     put("cilotw", (b.fedml - 1.96 * tw["fedml_se_twoway"]) / 10, 3)
-    put("twfe", ex["twfe"]["b"]); put("twfese", ex["twfe"]["se"])
+    put("twfe", ex["twfe"]["b"]); put("twfese", ex["twfe"]["se"]); put("tbten", ex["twfe"]["b"] / 10, 3)
     put("savg", b.avg_theta); put("savgse", b.avg_theta_se)
     df = pd.read_csv(ROOT / "data" / "processed" / "panel.csv")
     rise = (df.groupby("iso")["internet_l1"].max() - df.groupby("iso")["internet_l1"].min()).mean()
@@ -570,7 +710,7 @@ def numbers():
     put("idvar", b.idvar_all); put("idvartot", 100 * b.idvar_all_total, 1)
     put("idvarlowA", b.idvar_low); put("idvarlowB", S("B", "Baseline").idvar_low)
     put("dmedlowA", b.d_median_low); put("dmedlowB", S("B", "Baseline").d_median_low)
-    for key, (P, n) in {"common": ("A", "Common sample of the earlier version"),
+    for key, (P, n) in {"common": ("A", "Complete-ICT sample"),
                         "rf": ("A", "Random forest nuisance"),
                         "ry": ("A", "Region-by-year effects"),
                         "precovid": ("A", "Pre-COVID sample, 1996-2019"),
@@ -607,7 +747,7 @@ def numbers():
         put(f"mde{P}", m["diff_mde"] / 10); put(f"cilo{P}", m["diff_ci"][0] / 10)
         put(f"cihi{P}", m["diff_ci"][1] / 10)
         put(f"diffsetw{P}", ex["twoway"][P]["diff_se_twoway"])
-        c = S(P, "Common sample of the earlier version")
+        c = S(P, "Complete-ICT sample")
         put(f"commondiff{P}", c["diff"]); put(f"commondiffse{P}", c.diff_se); put(f"commonp{P}", c.p_const)
         c = S(P, "Region-by-year effects")
         put(f"rydiff{P}", c["diff"]); put(f"rydiffse{P}", c.diff_se); put(f"ryp{P}", c.p_const)
@@ -654,6 +794,7 @@ def numbers():
         put(f"lp{'abcdefghi'[hh]}", lp.loc[hh, "fedml"] / 10); put(f"lpse{'abcdefghi'[hh]}", lp.loc[hh, "fedml_se"] / 10)
         put(f"lpc{'abcdefghi'[hh]}", lpc.loc[hh, "fedml"] / 10); put(f"lpcse{'abcdefghi'[hh]}", lpc.loc[hh, "fedml_se"] / 10)
         put(f"lpn{'abcdefghi'[hh]}", int(lp.loc[hh, "n_obs"]))
+        put(f"lpdiff{'abcdefghi'[hh]}", lp.loc[hh, "diff"]); put(f"lpdiffse{'abcdefghi'[hh]}", lp.loc[hh, "diff_se"])
     put("lpcn", int(lpc.loc[0, "n_obs"]))
     put("lpfedmlsplit", lp.loc[0, "fedml"])
     fy, ld, iv, lt = ex["five_year"], ex["long_difference"], ex["iv"], ex["lead_test"]
@@ -667,41 +808,111 @@ def numbers():
     put("leadd", lt["twfe_d"]); put("leaddse", lt["twfe_d_se"])
     cz = summ[summ["panel"] == "CZ"].set_index("spec").loc["High income, broadband, GDP per capita"]
     put("cz", cz.fedml); put("czse", cz.fedml_se)
+    cza = summ[summ["panel"] == "CZ"].set_index("spec").loc["All countries, broadband, GDP per capita"]
+    put("czall", cza.fedml); put("czallse", cza.fedml_se)
     put("czlo", (cz.fedml - 1.96 * cz.fedml_se) / 10); put("czhi", (cz.fedml + 1.96 * cz.fedml_se) / 10)
-    # vintages
-    f = RES / "vintage.json"
-    if f.exists():
+    # source comparisons (prefix v: PWT 10.0 vs 11.0; w: WDI vs PWT 11.0)
+    for kind, pre in [("pwt", "v"), ("wdi", "w")]:
+        f = RES / f"compare_{kind}.json"
+        if not f.exists():
+            continue
         v = json.load(open(f))
-        put("vn", v["n_common"]); put("vcty", v["n_countries"])
+        put(pre + "n", v["n_common"]); put(pre + "cty", v["n_countries"])
         cf = {(r["y"], r["z"], r["x"]): r for r in v["configs"]}
-        a0, a1 = cf[("10", "10", "10")], cf[("11", "11", "11")]
-        put("vten", a0["diff"]); put("vtense", a0["diff_se"]); put("vel", a1["diff"]); put("velse", a1["diff_se"])
-        put("vtenlow", a0["gate_low"]); put("vtenlowse", a0["gate_low_se"])
-        put("vy", cf[("11", "10", "10")]["diff"]); put("vz", cf[("10", "11", "10")]["diff"])
-        put("vx", cf[("10", "10", "11")]["diff"])
-        put("vtenfx", a0["fixed_diff"]); put("velfx", a1["fixed_diff"])
-        put("vlamten", lamf(a0["lambda"])); put("vlamel", lamf(a1["lambda"]))
-        put("vlamy", lamf(cf[("11", "10", "10")]["lambda"])); put("vlamfx", lamf(v["fixed_lambda"]))
+        a0, a1 = cf[("a", "a", "a")], cf[("b", "b", "b")]
+        put(pre + "a", a0["diff"]); put(pre + "ase", a0["diff_se"])
+        put(pre + "b", a1["diff"]); put(pre + "bse", a1["diff_se"])
+        put(pre + "alow", a0["gate_low"]); put(pre + "alowse", a0["gate_low_se"])
+        put(pre + "y", cf[("b", "a", "a")]["diff"]); put(pre + "z", cf[("a", "b", "a")]["diff"])
+        put(pre + "x", cf[("a", "a", "b")]["diff"])
+        put(pre + "afx", a0["fixed_diff"]); put(pre + "bfx", a1["fixed_diff"])
+        put(pre + "lama", lamf(a0["lambda"])); put(pre + "lamb", lamf(a1["lambda"]))
+        put(pre + "lamfx", lamf(v["fixed_lambda"]))
         d = v["difference"]
-        put("vdiff", d["est"]); put("vdiffbse", d["boot_se"]); put("vdiffbmean", d["boot_mean"])
-        put("vdifflo", d["boot_ci"][0]); put("vdiffhi", d["boot_ci"][1]); put("vnboot", d["n_boot"])
-        put("vdiffp", d["boot_p_le0"], 3)
-        put("vtenbse", d["diff10_boot_se"]); put("velbse", d["diff11_boot_se"])
-        put("vtenbmean", d["diff10_boot_mean"]); put("velbmean", d["diff11_boot_mean"])
-        put("vshrink", 100 * (1 - a1["diff"] / a0["diff"]), 0)
+        put(pre + "diff", d["est"]); put(pre + "diffbse", d["boot_se"]); put(pre + "diffbias", d["boot_bias"])
+        put(pre + "difflo", d["boot_ci_basic"][0]); put(pre + "diffhi", d["boot_ci_basic"][1])
+        put(pre + "nboot", d["n_boot"])
+        for side in ["a", "b"]:
+            cs = v[f"contrast_{side}"]
+            put(pre + side + "bse", cs["boot_se"]); put(pre + side + "blo", cs["boot_ci_basic"][0])
+            put(pre + side + "bhi", cs["boot_ci_basic"][1]); put(pre + side + "ble", 100 * cs["boot_share_le0"], 0)
         for k in ["outcome", "moderator", "controls"]:
-            put(f"shf{k}", v["shapley_full"][k]); put(f"shx{k}", v["shapley_fixed"][k])
-            put(f"shfshare{k}", 100 * v["shapley_full"][k] / v["total_full"], 0)
-            put(f"shxshare{k}", 100 * v["shapley_fixed"][k] / v["total_fixed"], 0)
-        put("shftotal", v["total_full"]); put("shxtotal", v["total_fixed"])
-        put("vswitch", 100 * v["tercile_switch_share"], 1); put("vswitchn", v["countries_switching"])
-        put("vrankcorr", v["rank_corr"], 3); put("vgcorr", v["growth_corr_annual"])
-        put("vgcorrm", v["growth_corr_country_means"])
+            put(pre + "shf" + k, v["shapley_full"][k]); put(pre + "shx" + k, v["shapley_fixed"][k])
+        put(pre + "shftotal", v["total_full"]); put(pre + "shxtotal", v["total_fixed"])
+        for k in ["outcome", "moderator", "controls"]:
+            put(pre + "shfshare" + k, 100 * v["shapley_full"][k] / v["total_full"], 0)
+            put(pre + "shxshare" + k, 100 * v["shapley_fixed"][k] / v["total_fixed"], 0)
+        bs_ = pd.read_csv(RES / f"compare_{kind}_bootstrap.csv")
+        dd_ = bs_["diff_a"] - bs_["diff_b"]
+        put(pre + "diffshare", 100 * min(np.mean(dd_ <= 0), np.mean(dd_ >= 0)), 0)
+        put(pre + "absdiff", abs(d["est"]))
+        put(pre + "switch", 100 * v["tercile_switch_share"], 1); put(pre + "switchn", v["countries_switching"])
+        put(pre + "rankcorr", v["rank_corr"], 3); put(pre + "gcorr", v["growth_corr_annual"])
+        sd = v["seeds"]
+        for k in ["diff_a", "diff_b", "diff"]:
+            put(pre + "seed" + k.replace("_", "") + "lo", min(sd[k])); put(pre + "seed" + k.replace("_", "") + "hi", max(sd[k]))
         lo = v["loco"]
-        cty = pd.read_csv(ROOT / "data" / "processed" / "panel_pwt11.csv").drop_duplicates("iso").set_index("iso")["country"]
-        for k, lab in [("ch_dd", "dd"), ("ch_low10", "low"), ("ch_diff10", "dten"), ("ch_diff11", "del")]:
-            put(f"loco{lab}", lo[k]["change"]); put(f"loco{lab}cty", cty.get(lo[k]["iso"], lo[k]["iso"]))
-        put("locoddmin", lo["dd_range"][0]); put("locoddmax", lo["dd_range"][1])
+        put(pre + "locolo", lo["range"][0]); put(pre + "locohi", lo["range"][1])
+        put(pre + "locomax", lo["max_change"]); put(pre + "locoiso", lo["max_iso"])
+    # new robustness rows (FE-DML and contrasts)
+    for key, n in [("trends", "Country-specific linear trends"), ("notrans", "Excluding transition economies"),
+                   ("added", "Excluding the eight countries outside the complete-ICT sample"),
+                   ("pone", "Period 1996-2011"), ("ptwo", "Period 2012-2025"),
+                   ("lagtwo", "Two-year lag of internet")]:
+        for P in "ABC":
+            r = summ[(summ["panel"] == P) & (summ["spec"] == n)]
+            if len(r):
+                r = r.iloc[0]
+                put(f"{key}{P}", r.fedml); put(f"{key}se{P}", r.fedml_se)
+                put(f"{key}diff{P}", r["diff"]); put(f"{key}diffse{P}", r.diff_se)
+                put(f"{key}{P}p", r.p_const)
+    t = ex["twfe_checks"]
+    for k, lab in [("baseline", "tb"), ("linear_trends", "ttr"), ("quadratic_trends", "tqt"),
+                   ("lagged_productivity", "tlp"), ("lp_init_tercile_x_year", "tly"),
+                   ("region_x_year", "try"), ("period_1996-2011", "tpone"), ("period_2012-2025", "tptwo"),
+                   ("no_transition", "tnt"), ("outcome_gdp_growth", "tgdp"),
+                   ("outcome_employment_growth", "temp"), ("outcome_emp_rate_growth", "tempr")]:
+        put(lab, t[k][0]); put(lab + "se", t[k][1])
+    lt = ex["lead_test"]
+    put("leadonly", lt["fedml_lead_only"]); put("leadonlyse", lt["fedml_lead_only_se"])
+    put("chgtw", lt["twfe_change"]); put("chgtwse", lt["twfe_change_se"])
+    put("chgdml", lt["fedml_change"]); put("chgdmlse", lt["fedml_change_se"])
+    tim = {int(k): v for k, v in lt["timing"].items()}
+    put("timlag", tim[0][0]); put("timlead", tim[2][0]); put("timfar", tim[-5][0]); put("timfarlead", tim[5][0])
+    put("timn", lt["timing_n"])
+    for pre, key in [("pwtel", "twfe_pwt11"), ("pwtten", "twfe_pwt10")]:
+        put(pre + "twi", ex[key]["interaction"]["diff"]); put(pre + "twise", ex[key]["interaction"]["diff_se"])
+        put(pre + "tws", ex[key]["spline"]["diff"]); put(pre + "twsse", ex[key]["spline"]["diff_se"])
+    ldl = ex["long_difference_levels"]
+    put("ldlols", ldl["ols"]); put("ldlolsse", ldl["ols_se"]); put("ldln", ldl["n"])
+    put("nadded", len(ex["added_countries"]))
+    # specification curve count (schooling rows)
+    a = summ[(summ["panel"] == "A") & ~summ["spec"].str.contains("TFP|GDP per capita|composite")]
+    put("scneg", int((a["fedml"] < 0).sum())); put("scexcl", int(((a["fedml"] + 1.96 * a["fedml_se"]) < 0).sum()))
+    put("scn", int(len(a)))
+    f = RES / "diagnostics.json"
+    if f.exists():
+        g = json.load(open(f))
+        ss = g["seed_summary"]
+        put("seedmean", ss["fedml_mean"]); put("seedsd", ss["fedml_sd"]); put("seedmin", ss["fedml_min"])
+        put("seedmax", ss["fedml_max"]); put("seedshare", 100 * ss["share_ci_excludes_zero"], 0)
+        put("seedupper", ss["upper_median"] / 10, 3)
+        for P in "ABC":
+            put(f"seeddiff{P}lo", ss[f"diff_{P}_min"]); put(f"seeddiff{P}hi", ss[f"diff_{P}_max"])
+        nf = g["nuisance_fit"]
+        put("rtwoly", nf["LightGBM|outcome"]["r2"]); put("rtwolyw", nf["LightGBM|outcome"]["r2_within"])
+        put("rtwold", nf["LightGBM|treatment"]["r2"]); put("rtwoldw", nf["LightGBM|treatment"]["r2_within"])
+        put("rtwoliny", nf["Linear (CRE, year dummies)|outcome"]["r2"])
+        put("rtwolind", nf["Linear (CRE, year dummies)|treatment"]["r2"])
+        hy = pd.DataFrame(g["hyper"])
+        ha = hy[hy["panel"] == "A"]
+        put("hyperlo", ha["fedml"].min()); put("hyperhi", ha["fedml"].max())
+    f = RES / "source_diagnostics.json"
+    if f.exists():
+        sdg = json.load(open(f))["PWT 11.0"]
+        put("sdpooled", sdg["pooled"]); put("sdwithin", sdg["within"]); put("sdmeans", sdg["means"])
+        put("sdlow", sdg["within_terciles"][0]); put("sdhigh", sdg["within_terciles"][2])
+        put("sdgdp", sdg["within_gdp"]); put("sdemp", sdg["within_emp"])
     f = RES / "invariance.json"
     if f.exists():
         iv_ = json.load(open(f))
@@ -723,6 +934,13 @@ def numbers():
                     put(f"prd{tag}", q["reject_diff"].mean())
                     put(f"preps{tag}", int(len(q)))
             put(f"ptarget{P}", p.loc[p["moderator"] == zn, "target"].iloc[0])
+            q = p[(p["moderator"] == zn) & (p["shape"] == "null") & (p["method"] == "Panel-DOSE")]
+            if "fedml_reject" in q:
+                put(f"pfereject{P}", q["fedml_reject"].mean()); put(f"pfecover{P}", q["fedml_cover"].mean())
+                put(f"pfebias{P}", q["fedml_err"].mean(), 2)
+            for sh, sl in [("null", "n"), ("linear", "l"), ("threshold", "t")]:
+                q = p[(p["moderator"] == zn) & (p["shape"] == sh) & (p["method"] == "Panel-DOSE")]
+                put(f"pcovmin{sl}{P}", q["diff_cover"].mean())
             for mth, ml in [("TWFE-interaction", "twi"), ("TWFE-spline", "tws")]:
                 q = p[(p["moderator"] == zn) & (p["shape"] == "null") & (p["method"] == mth)]
                 if len(q):
@@ -807,6 +1025,10 @@ if __name__ == "__main__":
     if what in ("all", "sim", "plasmode"):
         plasmode_table()
     if what in ("all", "emp"):
-        emp_outputs()
-        vintage_table()
+        summ_, js_ = emp_outputs()
+        compare_tables()
+        source_diagnostics()
+        twfe_table(js_["extra"])
+        diag_tables()
+        spec_curve(summ_)
     numbers()

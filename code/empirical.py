@@ -33,7 +33,7 @@ ORIGINAL = ["lp_l1", "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep
             "dlp_l1", "mobile_l1", "broadband_l1"]
 PWT_BASE = ["hc_l1", "csh_g_l1", "open_l1", "dpop_l1", "labsh_l1", "lp_init"]
 STATIC = ("lp_init", "lays_mean", "spi_mean", "fixed90", "resource_share")
-N_JOBS = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+N_JOBS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 1
 
 
 def lgbm():
@@ -48,15 +48,18 @@ def rf():
 
 
 # ----------------------------------------------------------------------------- estimation
-def fit_dose(df, y="dlp", d="internet_l1", z="hc_l1", controls=None, learner=lgbm, n_rep=5,
-             mode="vc", time="year", exclude=(), **kw):
+N_MAIN, N_ROB = 20, 10   # repetitions of the sample split: main estimates / robustness checks
+
+
+def fit_dose(df, y="dlp", d="internet_l1", z="hc_l1", controls=None, learner=lgbm, n_rep=N_MAIN,
+             mode="vc", time="year", exclude=(), trend=None, fold_unit=None, **kw):
     controls = list(BASE if controls is None else controls)
     if mode == "vc" and z not in controls:
         controls.append(z)
     m = PanelDOSE(learner, mode=mode, n_rep=n_rep, z_in_controls=(mode == "vc"),
                   mundlak_exclude=STATIC + tuple(exclude), seed=kw.pop("seed", 11), **kw)
     m.fit(df.reset_index(drop=True), y, d, controls, "iso", time,
-          z=z if mode == "vc" else None)
+          z=z if mode == "vc" else None, trend=trend, fold_unit=fold_unit)
     return m
 
 
@@ -66,8 +69,12 @@ def tercile_masks(m, df, by_year=False):
         r = df.groupby("year")[m._zname].rank(pct=True).values
         return r <= 1 / 3, (r > 1 / 3) & (r <= 2 / 3), r > 2 / 3
     q1, q2 = np.quantile(z, [1 / 3, 2 / 3])
-    if q2 <= q1:  # mass point (a moderator censored at zero): split the rest at its median
-        q2 = np.quantile(z[z > q1], 0.5)
+    zmin = z.min()
+    if np.mean(z <= zmin) > 0.25:
+        # mass point at the minimum (a moderator censored at zero): the mass point is the low
+        # group and the remaining observations are split at their median
+        q1 = zmin
+        q2 = np.quantile(z[z > zmin], 0.5)
     return z <= q1, (z > q1) & (z <= q2), z > q2
 
 
@@ -124,6 +131,7 @@ def run_spec(spec):
     by_year = kw.pop("by_year", False)
     weights = kw.pop("weights", None)
     need = [z, kw.get("y", "dlp"), kw.get("d", "internet_l1")] + list(kw.get("controls", BASE))
+    kw.setdefault("n_rep", N_ROB)
     data = data.dropna(subset=need)
     grid = np.quantile(data[z], np.linspace(0.01, 0.99, 33))
     m = fit_dose(data, **kw)
@@ -222,7 +230,7 @@ def five_year(df, controls=BASE):
     p = p[p["nyr"] >= 3].copy()
     p["year"] = p["period"]
     b, V = fe_ols(p, p[["internet_l1"] + controls].values, p["dlp5"].values)
-    m = PanelDOSE(lgbm, n_rep=5, n_knots=0, degree=0, penalty=False, z_in_controls=True,
+    m = PanelDOSE(lgbm, n_rep=N_ROB, n_knots=0, degree=0, penalty=False, z_in_controls=True,
                   n_folds=5, mundlak_exclude=STATIC, seed=11)
     m.fit(p, "dlp5", "internet_l1", controls + ["hc_l1"] if "hc_l1" not in controls else controls,
           "iso", "year", z="hc_l1")
@@ -231,7 +239,7 @@ def five_year(df, controls=BASE):
             "fedml_se": a[1], "n_obs": len(p), "n_countries": int(p["iso"].nunique())}
 
 
-def long_difference(df, start=2000, end=2024, controls=BASE):
+def long_difference(df, start=2000, end=2024, controls=BASE, from_levels=False):
     """Cross-country long difference.
 
     Outcome: average annual productivity growth over start..end, i.e. 100 (ln LP_end -
@@ -239,11 +247,15 @@ def long_difference(df, start=2000, end=2024, controls=BASE):
     Regressor: the change in the panel treatment D_t = internet_{t-1} between start and end,
     i.e. internet_{end-1} - internet_{start-1}.  Controls: their panel values in the start year
     (lagged, i.e. mostly 1999 values).  OLS (HC1) and cross-fitted partially linear DML."""
+    if from_levels:
+        # every country with productivity in 1999 and 2024 and the start-year controls,
+        # without the panel's trimming and 15-year rule
+        df = pd.read_csv(PROC / "panel_all.csv")
     a = df[df["year"] == start].set_index("iso")
     b = df[df["year"] == end].set_index("iso")
     raw = pd.read_csv(ROOT / "data" / "raw" / "wdi" / "gdp_per_worker.csv")
     lp = np.log(raw.pivot(index="iso", columns="year", values="gdp_per_worker"))
-    ids = a.index.intersection(b.index)
+    ids = a.index.intersection(b.index).intersection(lp.index)
     y = 100 * (lp.loc[ids, end] - lp.loc[ids, start - 1]) / (end - start + 1)
     x = b.loc[ids, "internet_l1"] - a.loc[ids, "internet_l1"]
     W = a.loc[ids, controls]
@@ -273,26 +285,113 @@ def long_difference(df, start=2000, end=2024, controls=BASE):
 
 
 # ----------------------------------------------------------------------------- exogeneity
-def lead_test(df, controls=BASE):
-    """Strict-exogeneity check (Wooldridge, 2010, Section 10.7): add the lead of the treatment,
-    D_{t+1} = internet_t, to the static model.  Under strict exogeneity and no feedback from
-    productivity growth to future adoption its coefficient is zero."""
-    d = df.dropna(subset=["internet_f1"]).reset_index(drop=True)
-    b, V = fe_ols(d, d[["internet_l1", "internet_f1"] + controls].values, d["dlp"].values)
-    m = fit_dose(d, d="internet_f1", z="hc_l1", controls=controls + ["internet_l1"])
+def fedml(df, **kw):
+    """Constant-effect FE-DML estimate (and s.e.) from the Panel-DOSE residuals."""
+    m = fit_dose(df, **kw)
     c = copy.copy(m)
     c._raw = m._raw
     c.rebasis(0, 0, penalty=False)
-    lead, lead_se = c.average_effect()
-    return {"twfe_d": float(b[0]), "twfe_d_se": float(np.sqrt(V[0, 0])),
-            "twfe_lead": float(b[1]), "twfe_lead_se": float(np.sqrt(V[1, 1])),
-            "fedml_lead": lead, "fedml_lead_se": lead_se, "n_obs": len(d),
-            "n_countries": int(d["iso"].nunique())}
+    return c.average_effect()
+
+
+def lead_test(df, controls=BASE):
+    """Timing checks.
+
+    * Strict-exogeneity check (Wooldridge, 2010, Section 10.7): add the lead D_{t+1} =
+      internet_t to the static model; under strict exogeneity its coefficient is zero.
+    * Lead as the only treatment (FE-DML) and TWFE with the adoption share dated t-6 ... t+4,
+      each on the common subsample where all dates are observed.
+    * The lagged change D_t - D_{t-1} as treatment.
+    """
+    d = df.dropna(subset=["internet_f1"]).reset_index(drop=True)
+    b, V = fe_ols(d, d[["internet_l1", "internet_f1"] + controls].values, d["dlp"].values)
+    lead, lead_se = fedml(d, d="internet_f1", z="hc_l1", controls=controls + ["internet_l1"],
+                          n_rep=N_ROB)
+    lead_only, lead_only_se = fedml(d, d="internet_f1", z="hc_l1", n_rep=N_ROB)
+    out = {"twfe_d": float(b[0]), "twfe_d_se": float(np.sqrt(V[0, 0])),
+           "twfe_lead": float(b[1]), "twfe_lead_se": float(np.sqrt(V[1, 1])),
+           "fedml_lead": lead, "fedml_lead_se": lead_se,
+           "fedml_lead_only": lead_only, "fedml_lead_only_se": lead_only_se,
+           "n_obs": len(d), "n_countries": int(d["iso"].nunique())}
+    # adoption dated s = t-6, ..., t+4 (D_t = internet_{t-1}); common subsample
+    raw = pd.read_csv(PROC / "panel_all.csv")[["iso", "year", "internet_l1"]]
+    x = df.copy()
+    shifts = list(range(-5, 6))  # internet_{t-1+k}: k = -5 ... 5
+    for k in shifts:
+        r = raw.copy()
+        r["year"] = r["year"] - k
+        x = x.merge(r.rename(columns={"internet_l1": f"net_{k}"}), on=["iso", "year"], how="left")
+    x = x.dropna(subset=[f"net_{k}" for k in shifts]).reset_index(drop=True)
+    timing = {}
+    for k in shifts:
+        bk, Vk = fe_ols(x, x[[f"net_{k}"] + controls].values, x["dlp"].values)
+        timing[str(k)] = [float(bk[0]), float(np.sqrt(Vk[0, 0]))]
+    out["timing"] = timing
+    out["timing_n"] = len(x)
+    # lagged change
+    df2 = df.dropna(subset=["internet_l2"]).copy()
+    df2["dnet"] = df2["internet_l1"] - df2["internet_l2"]
+    b2, V2 = fe_ols(df2, df2[["dnet"] + controls].values, df2["dlp"].values)
+    ch, ch_se = fedml(df2, d="dnet", z="hc_l1", n_rep=N_ROB)
+    out.update({"twfe_change": float(b2[0]), "twfe_change_se": float(np.sqrt(V2[0, 0])),
+                "fedml_change": ch, "fedml_change_se": ch_se})
+    return out
+
+
+def twfe_checks(df, controls=BASE):
+    """Linear two-way FE checks against trends, convergence and development-specific shocks."""
+    out = {}
+    y = df["dlp"].values
+    X = df[["internet_l1"] + controls].values
+
+    def fit(Xm, yv, d=df, trend=None):
+        Xw = within_two_way(Xm, d["iso"], d["year"], trend=trend)
+        yw = within_two_way(yv, d["iso"], d["year"], trend=trend)
+        b, *_ = np.linalg.lstsq(Xw, yw, rcond=None)
+        e = yw - Xw @ b
+        u = pd.factorize(d["iso"])[0]
+        S_ = np.zeros((u.max() + 1, Xw.shape[1]))
+        np.add.at(S_, u, Xw * e[:, None])
+        A = np.linalg.pinv(Xw.T @ Xw)
+        G, n, k = u.max() + 1, len(yw), Xw.shape[1]
+        Vv = G / (G - 1) * (n - 1) / max(n - k, 1) * A @ S_.T @ S_ @ A
+        return float(b[0]), float(np.sqrt(Vv[0, 0]))
+
+    yr = df["year"].values.astype(float)
+    out["baseline"] = fit(X, y)
+    out["linear_trends"] = fit(X, y, trend=yr)
+    # quadratic trends: partial out unit x year^2 as extra regressors after linear trends
+    q = pd.get_dummies(df["iso"]).values.astype(float) * ((yr - 2010) ** 2)[:, None]
+    out["quadratic_trends"] = fit(np.c_[X, q], y, trend=yr)
+    out["lagged_productivity"] = fit(np.c_[X, df["lp_l1"].values], y)
+    tl = pd.get_dummies(pd.qcut(df["lp_init"], 3, labels=False).astype(str) + "_"
+                        + df["year"].astype(str)).values.astype(float)
+    out["lp_init_tercile_x_year"] = fit(np.c_[X, tl], y)
+    ry = pd.get_dummies(df["ryear"]).values.astype(float)
+    out["region_x_year"] = fit(np.c_[X, ry], y)
+    for P, per in [("1996-2011", df["year"] <= 2011), ("2012-2025", df["year"] >= 2012)]:
+        d = df[per].reset_index(drop=True)
+        out[f"period_{P}"] = fit(d[["internet_l1"] + controls].values, d["dlp"].values, d=d)
+    d = df[~df["transition"]].reset_index(drop=True)
+    out["no_transition"] = fit(d[["internet_l1"] + controls].values, d["dlp"].values, d=d)
+    # decomposition dlp = dgdp - demp (WDI GDP growth and implied employment growth)
+    d = df.dropna(subset=["dgdp", "demp"]).reset_index(drop=True)
+    Xd = d[["internet_l1"] + controls].values
+    out["outcome_gdp_growth"] = fit(Xd, d["dgdp"].values, d=d)
+    out["outcome_employment_growth"] = fit(Xd, d["demp"].values, d=d)
+    out["outcome_emp_rate_growth"] = fit(Xd, (d["dgdppc"] - d["dlp"]).values, d=d)
+    return out
+
+
+def twfe_pwt(p, controls=PWT_BASE):
+    """Linear benchmarks along initial productivity in a PWT panel."""
+    return {"interaction": twfe_gradient(p, "lp_init", controls=controls),
+            "spline": twfe_gradient(p, "lp_init", controls=controls, spline=True)}
 
 
 def dose_response(df):
     """Dose-response model f(D) in internet penetration (O'Sullivan penalty; R13 re-examination)."""
-    m = PanelDOSE(lgbm, mode="dose", n_rep=5, mundlak_exclude=STATIC, seed=11)
+    m = PanelDOSE(lgbm, mode="dose", n_rep=N_MAIN, mundlak_exclude=STATIC, seed=11)
     m.fit(df.reset_index(drop=True), "dlp", "internet_l1", BASE, "iso", "year")
     grid = np.quantile(df["internet_l1"], np.linspace(0.05, 0.95, 33))
     out = {"curve": m.effect(grid).to_dict(orient="list"), "avg": m.average_effect(),
@@ -307,6 +406,7 @@ def dose_response(df):
 def main():
     df = pd.read_csv(PROC / "panel.csv")
     common = pd.read_csv(PROC / "panel_common.csv")
+    added = sorted(set(df["iso"]) - set(common["iso"]))
     unt = pd.read_csv(PROC / "panel_untrimmed.csv")
     p10 = pd.read_csv(PROC / "panel_pwt.csv")
     p11 = pd.read_csv(PROC / "panel_pwt11.csv")
@@ -339,74 +439,80 @@ def main():
 
     specs = []
     for P, z in [("A", "hc_l1"), ("B", "lp_init"), ("C", "ysince_l1")]:
-        specs.append(S(P, "Baseline", df, z=z))
-        specs.append(S(P, "Common sample of the earlier version", common, z=z))
+        specs.append(S(P, "Baseline", df, z=z, n_rep=N_MAIN))
+        specs.append(S(P, "Complete-ICT sample", common, z=z, n_rep=N_MAIN))
+        specs.append(S(P, "Country-specific linear trends", df, z=z, trend="year"))
+        specs.append(S(P, "Excluding transition economies", df[~df["transition"]], z=z))
+        specs.append(S(P, "Excluding the eight countries outside the complete-ICT sample",
+                       df[~df["iso"].isin(added)], z=z))
+        specs.append(S(P, "Period 1996-2011", df[df["year"] <= 2011], z=z))
+        specs.append(S(P, "Period 2012-2025", df[df["year"] >= 2012], z=z))
         specs.append(S(P, "Region-by-year effects", df, z=z, time="ryear",
                        controls=BASE + ["year", "region_code"], exclude=("year", "region_code"),
-                       n_rep=3))
+                       n_rep=N_ROB))
     for P, z in [("A", "hc_l1"), ("B", "lp_init")]:
         specs += [
             S(P, "Original specification", df, z=z, controls=ORIGINAL + (["lp_init"] if z == "lp_init" else [])),
             S(P, "Adding the investment share", df, z=z, controls=BASE + ["csh_i_l1"]),
             S(P, "Adding mobile and broadband", df, z=z, controls=BASE + ["mobile_l1", "broadband_l1"]),
             S(P, "Adding mobile and broadband, no zero-filling", df, z=z,
-              controls=BASE + ["mobile_l1", "broadband_nf_l1"], n_rep=3),
+              controls=BASE + ["mobile_l1", "broadband_nf_l1"], n_rep=N_ROB),
             S(P, "Treatment: composite ICT index", df, z=z, d="ict_index"),
-            S(P, "Random forest nuisance", df, z=z, learner=rf, n_rep=3),
-            S(P, "Unpenalised sieve", df, z=z, penalty=False, n_rep=3),
-            S(P, "Three interior knots", df, z=z, n_knots=3, n_rep=3),
-            S(P, "GCV penalty", df, z=z, select="gcv", n_rep=3),
-            S(P, "Two-year lag of internet", df, z=z, d="internet_l2", n_rep=3),
-            S(P, "Pre-COVID sample, 1996-2019", df[df["year"] <= 2019], z=z, n_rep=3),
-            S(P, "Excluding 2020-2021", df[~df["year"].isin([2020, 2021])], z=z, n_rep=3),
-            S(P, "Excluding 2025", df[df["year"] <= 2024], z=z, n_rep=3),
-            S(P, "Untrimmed outcome", unt, z=z, n_rep=3),
-            S(P, "Winsorised outcome", wins, z=z, n_rep=3),
-            S(P, "Without data screening", df_scr_off, z=z, n_rep=3),
-            S(P, "Excluding resource exporters", nores, z=z, n_rep=3),
-            S(P, "High statistical capacity (SPI)", hi_spi, z=z, n_rep=3),
-            S(P, "Outcome: GDP per capita growth", df, z=z, y="dgdppc", n_rep=3),
-            S(P, "Population-weighted averages", df, z=z, weights="population", n_rep=3),
-            S(P, "No Mundlak means", df, z=z, mundlak=False, n_rep=3),
-            S(P, "WDI data, PWT 11.0 countries, 1996-2023", s_pwt11, z=z, n_rep=3),
+            S(P, "Random forest nuisance", df, z=z, learner=rf, n_rep=N_ROB),
+            S(P, "Unpenalised sieve", df, z=z, penalty=False, n_rep=N_ROB),
+            S(P, "Three interior knots", df, z=z, n_knots=3, n_rep=N_ROB),
+            S(P, "GCV penalty", df, z=z, select="gcv", n_rep=N_ROB),
+            S(P, "Two-year lag of internet", df, z=z, d="internet_l2", n_rep=N_ROB),
+            S(P, "Pre-COVID sample, 1996-2019", df[df["year"] <= 2019], z=z, n_rep=N_ROB),
+            S(P, "Excluding 2020-2021", df[~df["year"].isin([2020, 2021])], z=z, n_rep=N_ROB),
+            S(P, "Excluding 2025", df[df["year"] <= 2024], z=z, n_rep=N_ROB),
+            S(P, "Untrimmed outcome", unt, z=z, n_rep=N_ROB),
+            S(P, "Winsorised outcome", wins, z=z, n_rep=N_ROB),
+            S(P, "Without data screening", df_scr_off, z=z, n_rep=N_ROB),
+            S(P, "Excluding resource exporters", nores, z=z, n_rep=N_ROB),
+            S(P, "High statistical capacity (SPI)", hi_spi, z=z, n_rep=N_ROB),
+            S(P, "Outcome: GDP per capita growth", df, z=z, y="dgdppc", n_rep=N_ROB),
+            S(P, "Population-weighted averages", df, z=z, weights="population", n_rep=N_ROB),
+            S(P, "No Mundlak means", df, z=z, mundlak=False, n_rep=N_ROB),
+            S(P, "WDI data, PWT 11.0 countries, 1996-2023", s_pwt11, z=z, n_rep=N_MAIN),
         ]
     specs += [S("A", "Moderator: learning-adjusted schooling", df.dropna(subset=["lays_mean"]),
-                z="lays_mean", n_rep=3),
+                z="lays_mean", n_rep=N_ROB),
               S("B", "Moderator: distance to US frontier", df, z="dist_us_l1", by_year=True,
-                n_rep=3),
+                n_rep=N_ROB),
               S("B", "Countries with pre-sample productivity only", df[df["lp_init_pre"]],
-                z="lp_init", n_rep=3)]
+                z="lp_init", n_rep=N_ROB)]
     for P, zp in [("A", "hc_l1"), ("B", "lp_init")]:
-        specs += [S(P, "PWT 11.0, 1996-2023", p11, z=zp, controls=PWT_BASE, n_rep=3),
+        specs += [S(P, "PWT 11.0, 1996-2023", p11, z=zp, controls=PWT_BASE, n_rep=N_MAIN),
                   S(P, "PWT 11.0, 1996-2019", p11[p11["year"] <= 2019], z=zp, controls=PWT_BASE,
-                    n_rep=3),
-                  S(P, "PWT 10.0, 1996-2019", p10, z=zp, controls=PWT_BASE, n_rep=3),
+                    n_rep=N_ROB),
+                  S(P, "PWT 10.0, 1996-2019", p10, z=zp, controls=PWT_BASE, n_rep=N_MAIN),
                   S(P, "PWT 11.0: outcome TFP growth", p11.dropna(subset=["dtfp"]), z=zp,
-                    y="dtfp", controls=PWT_BASE, n_rep=3)]
+                    y="dtfp", controls=PWT_BASE, n_rep=N_ROB)]
     na_ctrl = [c if c != "lp_init" else "lp_init_na" for c in PWT_BASE]
     specs += [S("B", "PWT 11.0, national-prices moderator", p11, z="lp_init_na",
-                controls=na_ctrl, n_rep=3),
+                controls=na_ctrl, n_rep=N_ROB),
               S("B", "PWT 10.0, national-prices moderator", p10, z="lp_init_na",
-                controls=na_ctrl, n_rep=3)]
-    specs += [S("C", "Random forest nuisance", df, z="ysince_l1", learner=rf, n_rep=3),
-              S("C", "Pre-COVID sample, 1996-2019", df[df["year"] <= 2019], z="ysince_l1", n_rep=3),
+                controls=na_ctrl, n_rep=N_ROB)]
+    specs += [S("C", "Random forest nuisance", df, z="ysince_l1", learner=rf, n_rep=N_ROB),
+              S("C", "Pre-COVID sample, 1996-2019", df[df["year"] <= 2019], z="ysince_l1", n_rep=N_ROB),
               S("C", "Adding mobile and broadband", df, z="ysince_l1",
-                controls=BASE + ["mobile_l1", "broadband_l1"], n_rep=3),
+                controls=BASE + ["mobile_l1", "broadband_l1"], n_rep=N_ROB),
               S("C", "Predetermined moderator (zero before take-off)", df, z="ysince_pre_l1",
-                n_rep=3)]
+                n_rep=N_ROB)]
     # local projections: cumulative growth from t-1 to t+h
     for h in range(0, 9):
         specs.append(S("LP", f"h={h}", df.dropna(subset=[f"cum{h}"]), z="lp_init", y=f"cum{h}",
-                       n_rep=3))
+                       n_rep=N_ROB))
         # common sample: observations for which the longest horizon is observed
         specs.append(S("LPc", f"h={h}", df.dropna(subset=["cum8"]), z="lp_init", y=f"cum{h}",
-                       n_rep=3))
+                       n_rep=N_ROB))
     # like-for-like broadband comparison with Czernich et al. (2011)
     hi_inc = df[df["income"] == "High income"]
     specs += [S("CZ", "High income, broadband, GDP per capita", hi_inc, z="hc_l1", d="broadband_l1",
-                y="dgdppc", n_rep=3),
+                y="dgdppc", n_rep=N_ROB),
               S("CZ", "All countries, broadband, GDP per capita", df, z="hc_l1", d="broadband_l1",
-                y="dgdppc", n_rep=3)]
+                y="dgdppc", n_rep=N_ROB)]
 
     res = Parallel(n_jobs=N_JOBS, verbose=0)(delayed(run_spec)(s) for s in specs)
     for s, (r, cv) in zip(specs, res):
@@ -432,6 +538,11 @@ def main():
     extra["dose"] = dose_response(df)
     extra["five_year"] = five_year(df)
     extra["long_difference"] = long_difference(df)
+    extra["long_difference_levels"] = long_difference(df, from_levels=True)
+    extra["twfe_checks"] = twfe_checks(df)
+    extra["twfe_pwt11"] = twfe_pwt(p11)
+    extra["twfe_pwt10"] = twfe_pwt(p10)
+    extra["added_countries"] = added
     extra["iv"] = iv_check(df)
     extra["lead_test"] = lead_test(df)
     cov = pd.read_csv(PROC / "coverage.csv")

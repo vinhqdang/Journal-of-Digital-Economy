@@ -30,3 +30,8 @@
 % double-blind review (author details and declarations are on the separate title page)
 \newif\ifblind
 \ifdefined\blindversion\blindtrue\fi
+
+% remove the elsarticle "Preprint submitted to" footer
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty\def\@oddfoot{\hfill\thepage\hfill}\let\@evenfoot\@oddfoot}
+\makeatother

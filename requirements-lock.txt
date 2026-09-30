@@ -1,10 +1,24 @@
-# Environment used for the reported results
-# Python 3.11.15 Linux x86_64
-numpy==2.4.6
-pandas==3.0.6
-scipy==1.17.1
-scikit-learn==1.9.1
+# Exact environment used for the reported results (top-level and transitive dependencies)
+# Python 3.11.15 on Linux x86_64
+cloudpickle==3.1.2
+contourpy==1.3.3
+cycler==0.12.1
+et_xmlfile==2.0.0
+fonttools==4.66.0
+joblib==1.6.0
+kiwisolver==1.5.1
 lightgbm==4.7.0
 matplotlib==3.11.2
-joblib==1.6.0
+narwhals==2.26.0
+numpy==2.4.6
 openpyxl==3.1.5
+packaging==24.0
+pandas==3.0.6
+pillow==12.3.0
+pymupdf==1.28.2
+pyparsing==3.1.1
+python-dateutil==2.9.0.post0
+scikit-learn==1.9.1
+scipy==1.17.1
+six==1.16.0
+threadpoolctl==3.7.0

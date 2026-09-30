@@ -16,8 +16,10 @@ linear gradient (size of the linearity test, power of the constancy test) and a 
 (power and bias under curvature).  The linear and threshold functions are scaled so that their
 high-minus-low tercile contrast equals the minimum detectable contrast of the application,
 2.8 times its standard error in the baseline.  The estimator is run exactly as in the application
-(LightGBM, five country folds, five repetitions of the split, cross-validated penalty).
+(LightGBM, five country folds, ten repetitions of the split, one cross-validated penalty
+pooled over the splits).  The pilot fit g_hat is cross-fitted by country.
 """
+import copy
 import sys
 from pathlib import Path
 
@@ -25,9 +27,10 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from sklearn.model_selection import GroupKFold
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from empirical import BASE, STATIC, lgbm, twfe_gradient  # noqa: E402
+from empirical import BASE, N_ROB, STATIC, lgbm, twfe_gradient  # noqa: E402
 from panel_dose import PanelDOSE, mundlak_means  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,9 +44,14 @@ def setup():
     extra = [c for c in BASE if c not in STATIC] + ["internet_l1"]
     feats = pd.concat([feats, mundlak_means(df, "iso", extra)], axis=1)
     feats["_t"] = df["year"]
-    g = lgb.LGBMRegressor(n_estimators=400, learning_rate=0.03, num_leaves=15,
-                          min_child_samples=20, verbose=-1, n_jobs=1).fit(feats, df["dlp"])
-    df["_g"] = g.predict(feats)
+    # out-of-fold pilot fit (folds by country), so that the residuals are not shrunk by
+    # in-sample overfitting and the pilot is not the learner's own in-sample fit
+    df["_g"] = np.nan
+    for tr, te in GroupKFold(5).split(feats, groups=df["iso"]):
+        g = lgb.LGBMRegressor(n_estimators=400, learning_rate=0.03, num_leaves=15,
+                              min_child_samples=20, verbose=-1, n_jobs=1)
+        g.fit(feats.iloc[tr], df["dlp"].iloc[tr])
+        df.loc[df.index[te], "_g"] = g.predict(feats.iloc[te])
     df["_e"] = df["dlp"] - df["_g"]
     return df
 
@@ -92,8 +100,12 @@ def one(zname, shape, rep, df, target):
     tgrid = at(grid)
     ctrl = BASE + ([zname] if zname not in BASE else [])
     out = []
-    m = PanelDOSE(lgbm, n_rep=5, z_in_controls=True, mundlak_exclude=STATIC, seed=rep)
+    m = PanelDOSE(lgbm, n_rep=N_ROB, z_in_controls=True, mundlak_exclude=STATIC, seed=rep)
     m.fit(d, "dlp", "internet_l1", ctrl, "iso", "year", z=zname)
+    c = copy.copy(m)
+    c._raw = m._raw
+    c.rebasis(0, 0, penalty=False)
+    fe, fe_se = c.average_effect()
     for name, pen in [("Panel-DOSE", True), ("Panel-DOSE (unpenalised)", False)]:
         m.refit_final(penalty=pen)
         e = m.effect(grid)
@@ -109,7 +121,9 @@ def one(zname, shape, rep, df, target):
                     "reject_diff": float(abs(diff / se) > 1.96),
                     "cover": float(np.mean(np.abs(e["est"] - tgrid) <= 1.96 * e["se"])),
                     "ucover": float(np.all((tgrid >= e["ulo"]) & (tgrid <= e["uhi"]))),
-                    "lambda": m.lambda_, "edf": m.edf_})
+                    "lambda": m.lambda_, "edf": m.edf_,
+                    "fedml_err": fe - float(np.mean(th)), "fedml_reject": float(abs(fe / fe_se) > 1.96),
+                    "fedml_cover": float(abs(fe - float(np.mean(th))) <= 1.96 * fe_se)})
     if zname != "ysince_l1":
         for name, spline in [("TWFE-interaction", False), ("TWFE-spline", True)]:
             r = twfe_gradient(d, zname, spline=spline)

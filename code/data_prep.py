@@ -24,6 +24,10 @@ OUT = ROOT / "data" / "processed"
 OUT.mkdir(parents=True, exist_ok=True)
 
 START, END = 1996, 2019          # PWT 10.0 ends in 2019
+# post-socialist transition economies (EBRD definition, excluding China and Viet Nam)
+TRANSITION = ["ALB", "ARM", "AZE", "BLR", "BIH", "BGR", "HRV", "CZE", "EST", "GEO", "HUN",
+              "KAZ", "KGZ", "LVA", "LTU", "MDA", "MNG", "MNE", "MKD", "POL", "ROU", "RUS", "SRB",
+              "SVK", "SVN", "TJK", "TKM", "UKR", "UZB", "XKX"]
 END_PWT11 = 2023                 # PWT 11.0 ends in 2023
 WDI_END = 2025
 
@@ -78,6 +82,10 @@ def build_pwt(fname="pwt100.xlsx", end=END, out="panel_pwt.csv"):
     df = df.merge(mob, on=["iso", "year"], how="left").merge(bb, on=["iso", "year"], how="left")
     df = df.sort_values(["iso", "year"]).reset_index(drop=True)
     fill_pre_rollout(df)
+    # the same screening rules as for the WDI series
+    df = screen_adoption(df, "screening_log_" + out.replace(".csv", "") + ".csv")
+    for c in ["internet", "mobile", "broadband"]:
+        df[c] = df[c + "_scr"]
 
     g = df.groupby("iso", group_keys=False)
     df["lp"] = np.log(df["rgdpna"] / df["emp"])
@@ -88,6 +96,8 @@ def build_pwt(fname="pwt100.xlsx", end=END, out="panel_pwt.csv"):
     df["dtfp"] = 100 * g["tfp"].diff()
     df["dkl"] = 100 * g["kl"].diff()
     df["dpop"] = 100 * g["pop"].apply(lambda s: np.log(s).diff())
+    df["demp"] = 100 * g["emp"].apply(lambda s: np.log(s).diff())
+    df["dgdp"] = 100 * g["rgdpna"].apply(lambda s: np.log(s).diff())
     df["open"] = df["csh_x"] - df["csh_m"]
     # Digital adoption enters with a one-year lag; shares are rescaled to [0, 1].
     for c in ["internet", "mobile", "broadband"]:
@@ -105,7 +115,8 @@ def build_pwt(fname="pwt100.xlsx", end=END, out="panel_pwt.csv"):
     df["lp_init_na"], _ = initial_level(df, "lp")
     cols = ["iso", "country", "year", "dlp", "dtfp", "dkl", "internet_l1", "internet_l2",
             "mobile_l1", "broadband_l1", "lp_l1", "kl_l1", "hc_l1", "csh_i_l1", "csh_g_l1",
-            "open_l1", "dpop_l1", "labsh_l1", "dlp_l1", "lp_init", "lp_init_na", "lp_init_pre"]
+            "open_l1", "dpop_l1", "labsh_l1", "dlp_l1", "lp_init", "lp_init_na", "lp_init_pre",
+            "demp", "dgdp"]
     # Sample: only the outcome, the treatment and the baseline controls must be observed.
     required = ["dlp", "internet_l1", "hc_l1", "csh_g_l1", "open_l1", "dpop_l1", "labsh_l1",
                 "lp_init"]
@@ -132,7 +143,7 @@ def load_mys():
     return pd.concat([m, ext], ignore_index=True)
 
 
-def screen_adoption(df):
+def screen_adoption(df, log_name="screening_log.csv"):
     """Flag implausible values and jumps in the ITU adoption series (set to missing).
 
     Rules: internet share outside [0, 100] or a year-on-year change above 25 points; mobile
@@ -149,7 +160,7 @@ def screen_adoption(df):
             log.append({"iso": r["iso"], "year": int(r["year"]), "series": c, "value": r[c]})
         df.loc[bad, c + "_scr"] = np.nan
         df.loc[~bad, c + "_scr"] = df.loc[~bad, c]
-    pd.DataFrame(log).to_csv(OUT / "screening_log.csv", index=False)
+    pd.DataFrame(log).to_csv(OUT / log_name, index=False)
     return df
 
 
@@ -174,6 +185,9 @@ def build_wdi():
     df["lp"] = np.log(df["gdp_per_worker"])
     df["dlp"] = 100 * g["lp"].diff()
     df["dgdppc"] = 100 * g["gdp_pc"].apply(lambda s: np.log(s).diff())
+    # GDP growth and implied employment growth (dlp = dgdp - demp)
+    df["dgdp"] = df["dgdppc"] + 100 * g["population"].apply(lambda s: np.log(s).diff())
+    df["demp"] = df["dgdp"] - df["dlp"]
     df["open"] = (df["exports"] + df["imports"]) / 100
     df["csh_i"] = df["invest"] / 100
     df["csh_g"] = df["govcons"] / 100
@@ -206,6 +220,7 @@ def build_wdi():
     df["ysince_pre_l1"] = df["ysince_l1"].clip(lower=0).fillna(0.0)
     df["ryear"] = df["region"].astype(str) + "_" + df["year"].astype(str)
     df["region_code"] = pd.factorize(df["region"])[0]
+    df["transition"] = df["iso"].isin(TRANSITION)
     fl90 = df[df["year"] == 1990].set_index("iso")["fixed_lines"]
     df["fixed90"] = df["iso"].map(fl90) / 100.0
     for f, col in [("spi", "spi"), ("lays", "lays")]:
@@ -222,13 +237,17 @@ def build_wdi():
             "hc_l1", "csh_i_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep_l1", "urb_l1", "dlp_l1"]
     extra = ["dgdppc", "population", "internet_raw_l1", "mobile_raw_l1", "broadband_raw_l1",
              "lp_init", "lp_init_pre", "dist_us_l1", "ysince_l1", "ysince_pre_l1", "ryear",
-             "region_code", "fixed90", "spi_mean", "lays_mean", "resource_share"] + \
+             "region_code", "transition", "dgdp", "demp", "fixed90", "spi_mean", "lays_mean",
+             "resource_share"] + \
         [f"cum{h}" for h in range(9)]
     # Baseline sample: only the outcome, the treatment and the baseline controls must be observed
     # (variables used only in robustness checks do not restrict the sample).
     required = ["dlp", "internet_l1", "hc_l1", "csh_g_l1", "open_l1", "dpop_l1", "dep_l1",
                 "urb_l1", "lp_init"]
     base = df[(df["year"] >= START) & (df["year"] <= WDI_END)][cols + extra]
+    # all country-years, no sample restrictions (long difference built from levels)
+    df[(df["year"] >= 1990) & (df["year"] <= WDI_END)][cols + extra + ["lp"]].to_csv(
+        OUT / "panel_all.csv", index=False)
     panel, cut = finish(base, required)
     panel.to_csv(OUT / "panel.csv", index=False)
     keep = set(panel["iso"])
@@ -266,7 +285,7 @@ def build_wdi():
     step = step[(step["dlp"] >= cut[0]) & (step["dlp"] <= cut[1])]
     flow.append(("Outcome within 1st-99th percentiles", len(step), step["iso"].nunique()))
     flow.append(("Countries with at least 15 years (baseline)", len(panel), panel["iso"].nunique()))
-    flow.append(("Common sample of the earlier version", len(common), common["iso"].nunique()))
+    flow.append(("Complete-ICT sample", len(common), common["iso"].nunique()))
     pd.DataFrame(flow, columns=["step", "obs", "countries"]).to_csv(OUT / "sample_flow.csv",
                                                                     index=False)
     # WDI economies absent from the sample, by income group (coverage diagnostic)

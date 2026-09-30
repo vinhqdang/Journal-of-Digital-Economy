@@ -15,7 +15,9 @@ Replication package for the manuscript
 | `code/data_prep.py` | Builds the WDI/UNDP panel (1996-2025), the PWT 11.0 (1996-2023) and PWT 10.0 (1996-2019) panels, the robustness samples and the sample-flow table |
 | `code/empirical.py` | Empirical application: baseline, robustness checks, local projections, long difference, lead test, IV check |
 | `code/empirical_post.py` | Two-way clustered standard errors, Holm adjustment and minimum detectable effects |
-| `code/vintage.py` | PWT 10.0 vs 11.0 on common country-years: component replacement, Shapley attribution, fixed-smoother variant, paired country bootstrap, leave-one-country-out refits |
+| `code/compare.py` | Heterogeneity across data sources on common country-years (`pwt`: PWT 10.0 vs 11.0; `wdi`: WDI vs PWT 11.0): component replacement, Shapley attribution, fixed-smoother variant, split-seed distribution, paired country bootstrap (copies of a country kept in one fold), leave-one-country-out refits |
+| `code/diagnostics.py` | Split-seed distribution of the baseline, out-of-fold nuisance fit, sensitivity to LightGBM hyper-parameters |
+| `code/make_anonymous_package.py` | Builds `submission/replication_anonymous.zip`, an anonymised copy of this package for double-blind review |
 | `code/invariance_check.py` | Numerical check of Proposition 1(ii) |
 | `code/plasmode.py` | Plasmode simulation on the empirical panel, for each of the three moderators |
 | `code/simulation.py` | Stylised Monte Carlo study (12 estimators, 4 effect shapes, sensitivity to sample size and confounding) |
@@ -26,6 +28,7 @@ Replication package for the manuscript
 | `data/processed/` | Estimation samples (`panel.csv` baseline, `panel_common.csv`, `panel_untrimmed.csv`, `panel_unscreened.csv`, `panel_pwt11.csv`, `panel_pwt.csv`), `sample_flow.csv`, `screening_log.csv`, `coverage.csv` |
 | `results/` | Raw simulation draws, bootstrap draws, summaries and empirical estimates |
 | `manuscript/` | `main.tex` (manuscript), `supplement.tex` (supplementary material), `main_blind.tex` and `supplement_blind.tex` (anonymised versions), `title_page.tex`, `refs.bib`, tables, figures, highlights, `build.sh` |
+| `submission/` | Anonymised replication archive for the reviewers |
 | `requirements.txt`, `requirements-lock.txt` | Minimum versions, and the exact versions used for the reported results |
 
 ## Reproducing the results from the archived snapshot
@@ -36,7 +39,9 @@ python code/verify.py data          # checksums of the archived WDI snapshot
 python code/data_prep.py            # data/processed/*.csv
 python code/empirical.py 4          # results/empirical_summary.csv, results/empirical.json (4 = cores)
 python code/empirical_post.py       # two-way SEs, Holm, MDE
-python code/vintage.py 4 199        # results/vintage.json (paired bootstrap with 199 draws)
+python code/compare.py pwt 4 199    # results/compare_pwt.json (PWT 10.0 vs 11.0)
+python code/compare.py wdi 4 199    # results/compare_wdi.json (WDI vs PWT 11.0)
+python code/diagnostics.py 4        # results/diagnostics.json
 python code/invariance_check.py     # results/invariance.json
 python code/plasmode.py 200 4       # results/plasmode_raw.csv
 python code/simulation.py 100 4     # results/simulation_raw.csv
@@ -46,7 +51,9 @@ python code/verify.py results       # compare with the numbers reported in the p
 sh manuscript/build.sh              # PDFs (pdflatex + bibtex)
 ```
 
-On four cores the estimation scripts take about two hours in total. `code/download_wdi.py`
+On four cores the estimation scripts take about four hours in total. Main estimates use 20
+repetitions of the sample split and one cross-validated penalty pooled over the splits;
+robustness checks, the bootstrap and the plasmode use ten. `code/download_wdi.py`
 is needed only to rebuild the snapshot from the live World Bank API; because WDI is revised
 continuously, a new download will not reproduce the archived numbers exactly.
 

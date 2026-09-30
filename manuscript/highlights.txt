@@ -1,7 +1,7 @@
 Highlights
 
-- Higher lagged internet use is not associated with faster productivity growth
+- Years of higher internet use were not years of faster productivity growth
+- Negative linear association is robust to trends but concentrated in 1996-2011
 - No robust variation with schooling, initial productivity or years since take-off
-- Development gradient appears in Penn World Table data but not in World Bank data
-- PWT 11.0 revision lowers the gradient, but the change is imprecisely estimated
+- Development gradient is large in Penn World Table data, weak in World Bank data
 - Panel-DOSE: debiased spline estimator for heterogeneity in fixed-effects panels

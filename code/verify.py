@@ -19,9 +19,9 @@ WDI = ROOT / "data" / "raw" / "wdi"
 
 # numbers reported in the manuscript (rounded as printed)
 EXPECTED = {
-    ("A", "Baseline", "fedml"): -2.79, ("A", "Baseline", "fedml_se"): 1.30,
-    ("A", "Baseline", "diff"): -0.67, ("B", "Baseline", "diff"): -0.25,
-    ("C", "Baseline", "diff"): -5.17, ("A", "Baseline", "n_obs"): 4075,
+    ("A", "Baseline", "fedml"): -2.64, ("A", "Baseline", "fedml_se"): 1.33,
+    ("A", "Baseline", "diff"): -0.70, ("B", "Baseline", "diff"): -0.76,
+    ("C", "Baseline", "diff"): -0.11, ("A", "Baseline", "n_obs"): 4075,
 }
 
 
@@ -47,9 +47,10 @@ def check_results():
         ok = abs(got - v) <= tol
         bad += not ok
         print(("OK  " if ok else "FAIL"), P, spec, col, f"{got:.4f}", "expected", v)
-    v = json.load(open(ROOT / "results" / "vintage.json"))
-    print("vintage difference", round(v["difference"]["est"], 2), "bootstrap s.e.",
-          round(v["difference"]["boot_se"], 2))
+    for kind in ["pwt", "wdi"]:
+        v = json.load(open(ROOT / "results" / f"compare_{kind}.json"))
+        print(kind, "difference", round(v["difference"]["est"], 2), "bootstrap s.e.",
+              round(v["difference"]["boot_se"], 2))
     if bad:
         sys.exit(f"{bad} number(s) differ")
     print("all checked numbers match")

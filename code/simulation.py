@@ -213,6 +213,7 @@ def wg_sieve(df):
         rd[te] = Dw[te] - lgbm().fit(Xw[tr], Dw[tr]).predict(Xw[te])
     m = PanelDOSE(lgbm, z_in_controls=True)
     m.unit_, m.time_ = unit, t
+    m.fold_, m._trend = unit, None
     m._Z, m._D, m._Y = df["z"].values, df["d"].values, df["y"].values
     m._Dw = Dw
     m.within = True
@@ -268,7 +269,7 @@ def one_rep(shape, rep, N, T, rho, full=True):
         rec("WG-DML sieve", dose_report(wg_sieve(df)))
         nomund = PanelDOSE(lgbm, n_rep=2, z_in_controls=True, mundlak=False).fit(
             df, "y", "d", CONTROLS, "unit", "t", z="z")
-        rec("Pooled DML-sieve", dose_report(from_raw(nomund, nomund._raw, False)))
+        rec("Pooled DML sieve", dose_report(from_raw(nomund, nomund._raw, False)))
         rec("Ablation: Mundlak only", dose_report(from_raw(main, main._raw, False)))
         rec("Ablation: within only", dose_report(nomund))
     main.refit_final(penalty=False)

@@ -86,6 +86,9 @@ def main():
     sup = SUP.read_text()
     appendix = sup.split(r"\appendix", 1)[1].split(r"\bibliographystyle{elsarticle-harv}", 1)[0]
     main_part = main_part.replace("The supplementary material contains", "The appendices contain")
+    # the KeAi version wraps the bibliography in a single-spacing group
+    main_part = main_part.rstrip().removesuffix("{\\singlespacing").rstrip()
+    appendix = appendix.rstrip().removesuffix("{\\singlespacing").rstrip().removesuffix("\\clearpage")
 
     # Declarations in the Springer Nature format.
     main_part, decl = main_part.split(r"\section*{Data and code availability}", 1)

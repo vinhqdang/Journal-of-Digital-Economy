@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from empirical import fit_dose  # noqa: E402
+from empirical import fit_dose, tercile_masks  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "results"
@@ -37,15 +37,14 @@ def main():
     ex = js["extra"]
     tw = {}
     for P, z in [("A", "hc_l1"), ("B", "lp_init"), ("C", "ysince_l1")]:
-        m = fit_dose(df, z=z)
-        zz = m._Z
-        q1, q2 = np.quantile(zz, [1 / 3, 2 / 3])
-        l_diff = m._L_mean(zz > q2) - m._L_mean(zz <= q1)
+        d = df.dropna(subset=[z]).reset_index(drop=True)
+        m = fit_dose(d, z=z)
+        lo, _, hi = tercile_masks(m, d)
+        l_diff = m._L_mean(hi) - m._L_mean(lo)
         c = copy.copy(m)
         c._raw = m._raw
         c.rebasis(0, 0, penalty=False)
-        tw[P] = {"diff_se_twoway": m.twoway_se(l_diff), "diff_se_country": m.group_contrast(
-                     zz > q2, zz <= q1)[1],
+        tw[P] = {"diff_se_twoway": m.twoway_se(l_diff), "diff_se_country": m.group_contrast(hi, lo)[1],
                  "fedml_se_twoway": c.twoway_se(np.ones(1)), "fedml_se_country": c.average_effect()[1]}
         print("twoway", P, flush=True)
     ex["twoway"] = tw

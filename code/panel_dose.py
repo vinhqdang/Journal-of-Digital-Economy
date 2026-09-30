@@ -66,8 +66,13 @@ def diff_penalty(k, order=2):
 
 
 # ----------------------------------------------------------------------------- panel algebra
-def within_two_way(a, unit, time, tol=1e-10, max_iter=500):
-    """Two-way demeaning by alternating projections (valid for unbalanced panels)."""
+def within_two_way(a, unit, time, tol=1e-10, max_iter=500, trend=None):
+    """Two-way demeaning by alternating projections (valid for unbalanced panels).
+
+    With `trend` (a numeric array, e.g. the calendar year) the unit step removes a unit-specific
+    linear trend instead of the unit mean, so the result is orthogonal to unit dummies, unit
+    dummies x trend and time dummies.
+    """
     a = np.asarray(a, float)
     squeeze = a.ndim == 1
     a = a.reshape(len(a), -1).copy()
@@ -75,10 +80,17 @@ def within_two_way(a, unit, time, tol=1e-10, max_iter=500):
     t = pd.factorize(time)[0]
     nu, nt = u.max() + 1, t.max() + 1
     cu, ct = np.bincount(u, minlength=nu), np.bincount(t, minlength=nt)
+    if trend is not None:
+        tr = np.asarray(trend, float)
+        tr = tr - (np.bincount(u, tr, nu) / cu)[u]          # unit-centred trend
+        stt = np.bincount(u, tr * tr, nu)
+        stt = np.where(stt > 1e-12, stt, np.inf)
     for _ in range(max_iter):
         old = a.copy()
         for j in range(a.shape[1]):
             a[:, j] -= (np.bincount(u, a[:, j], nu) / cu)[u]
+            if trend is not None:
+                a[:, j] -= (np.bincount(u, a[:, j] * tr, nu) / stt)[u] * tr
             a[:, j] -= (np.bincount(t, a[:, j], nt) / ct)[t]
         if np.max(np.abs(a - old)) < tol:
             break
@@ -120,6 +132,7 @@ class PanelDOSE:
     lambdas: np.ndarray = field(default_factory=lambda: np.r_[0.0, np.logspace(-6, 4, 41)])
     undersmooth: float = 1.0        # multiply the selected penalty by this factor (<1 undersmooths)
     lambda_fixed: float = None       # if set, use this penalty instead of cross-validation
+    pool_lambda: bool = True         # one penalty for all splits, from the CV error summed over splits
     seed: int = 0
 
     # ---------------------------------------------------------------- sieve
@@ -148,9 +161,19 @@ class PanelDOSE:
         return osullivan_penalty(self.knots_, self.lo_, self.hi_, self.degree)
 
     # ---------------------------------------------------------------- fit
-    def fit(self, df, y, d, controls, unit, time, z=None):
+    def _w(self, x):
+        return within_two_way(x, self.unit_, self.time_, trend=self._trend)
+
+    def fit(self, df, y, d, controls, unit, time, z=None, fold_unit=None, trend=None):
+        """fold_unit: column defining the groups for cross-fitting and penalty CV (default: unit).
+        In a cluster bootstrap, copies of the same original unit must share a fold, so the
+        original identifier is passed here while `unit` holds the relabelled copies.
+        trend: numeric column (e.g. the year); if given, the within step also removes
+        unit-specific linear trends."""
         df = df.reset_index(drop=True)
         self.unit_, self.time_ = df[unit].values, df[time].values
+        self.fold_ = df[fold_unit].values if fold_unit else self.unit_
+        self._trend = df[trend].values.astype(float) if trend else None
         Y = df[y].values.astype(float)
         D = df[d].values.astype(float)
         Z = df[z].values.astype(float) if (self.mode == "vc" and z is not None) else D
@@ -170,17 +193,17 @@ class PanelDOSE:
 
         self._resid, self._raw = [], []
         rng = np.random.default_rng(self.seed)
-        uniq = np.unique(self.unit_)
+        uniq = np.unique(self.fold_)
         for r in range(self.n_rep):
             perm = dict(zip(uniq, rng.permutation(len(uniq))))
-            groups = np.array([perm[g] for g in self.unit_])
+            groups = np.array([perm[g] for g in self.fold_])
             ry, rphi = self._crossfit(F, Y, D, Z, Phi, groups)
             self._raw.append((ry.copy(), getattr(self, "_rd", None)))
             if self.within:
-                ry = within_two_way(ry, self.unit_, self.time_)
-                rphi = within_two_way(rphi, self.unit_, self.time_)
+                ry = self._w(ry)
+                rphi = self._w(rphi)
             self._resid.append((ry, rphi))
-        self._Dw = within_two_way(D, self.unit_, self.time_) if self.within else D - D.mean()
+        self._Dw = self._w(D) if self.within else D - D.mean()
         self._pen = self._penalty_matrix(K)
         self.K_ = K
         self._Y, self._D, self._Z = Y, D, Z
@@ -189,7 +212,15 @@ class PanelDOSE:
 
     def _aggregate(self):
         pen = self._pen if self.penalty else np.zeros_like(self._pen)
-        self._splits = [self._final_stage(ry, rphi, pen) for ry, rphi in self._resid]
+        lam = None
+        if self.lambda_fixed is not None:
+            lam = float(self.lambda_fixed)
+        elif self.pool_lambda and pen.any():
+            # a single penalty for all splits: minimise the CV criterion summed over splits, so
+            # the reported median is not a mixture of fits with different smoothness
+            err = sum(self._cv_error(ry, rphi, pen) for ry, rphi in self._resid)
+            lam = float(self.lambdas[int(np.argmin(err))])
+        self._splits = [self._final_stage(ry, rphi, pen, lam) for ry, rphi in self._resid]
         betas = np.array([s["b"] for s in self._splits])
         bmed = np.median(betas, axis=0)
         Vs = [s["V"] + np.outer(s["b"] - bmed, s["b"] - bmed) for s in self._splits]
@@ -229,8 +260,8 @@ class PanelDOSE:
         for ry, rd in self._raw:
             rphi = Bz * rd[:, None]
             if self.within:
-                ry = within_two_way(ry, self.unit_, self.time_)
-                rphi = within_two_way(rphi, self.unit_, self.time_)
+                ry = self._w(ry)
+                rphi = self._w(rphi)
             self._resid.append((ry, rphi))
         self._pen = self._penalty_matrix(K)
         self.K_ = K
@@ -260,24 +291,27 @@ class PanelDOSE:
         return np.trace(RtR) / tp if tp > 0 else 0.0
 
     def _select_lambda(self, ry, R, pen):
-        n = len(ry)
         if not pen.any():
             return 0.0
+        return float(self.lambdas[int(np.argmin(self._cv_error(ry, R, pen)))])
+
+    def _cv_error(self, ry, R, pen):
+        """CV (or GCV) criterion over the penalty grid for one split."""
+        n = len(ry)
         grid = self.lambdas
         RtR = R.T @ R
         sc = self._scale(RtR, pen)
         if self.select == "gcv":
-            best, lam_best = np.inf, 0.0
-            for lam in grid:
+            out = np.empty(len(grid))
+            for j, lam in enumerate(grid):
                 Ainv = np.linalg.pinv(RtR + lam * sc * pen)
                 b = Ainv @ (R.T @ ry)
                 edf = np.trace(Ainv @ RtR)
-                g = n * np.sum((ry - R @ b) ** 2) / max(n - edf, 1.0) ** 2
-                if g < best:
-                    best, lam_best = g, lam
-            return lam_best
-        # leave-units-out cross-validation of the orthogonalised regression
-        u = pd.factorize(self.unit_)[0]
+                out[j] = n * np.sum((ry - R @ b) ** 2) / max(n - edf, 1.0) ** 2
+            return out
+        # leave-units-out cross-validation of the orthogonalised regression (folds formed by
+        # the fold units, so bootstrap copies of a country are never split)
+        u = pd.factorize(self.fold_)[0]
         folds = GroupKFold(min(self.cv_folds, u.max() + 1)).split(R, groups=u)
         err = np.zeros(len(grid))
         for tr, te in folds:
@@ -287,13 +321,13 @@ class PanelDOSE:
             for j, lam in enumerate(grid):
                 b = np.linalg.pinv(RtRt + lam * sct * pen) @ Rty
                 err[j] += np.sum((ry[te] - R[te] @ b) ** 2)
-        return float(grid[int(np.argmin(err))])
+        return err
 
-    def _final_stage(self, ry, R, pen):
+    def _final_stage(self, ry, R, pen, lam=None):
         n, K = R.shape
         RtR, Rty = R.T @ R, R.T @ ry
-        fixed = self.lambda_fixed
-        lam = self._select_lambda(ry, R, pen) if fixed is None else float(fixed)
+        if lam is None:
+            lam = self._select_lambda(ry, R, pen)
         lam_used = lam * self.undersmooth
         sc = self._scale(RtR, pen)
         A = RtR + lam_used * sc * pen
@@ -427,7 +461,8 @@ class PanelDOSE:
         """Standard error of l'beta clustered by unit and by time (Cameron, Gelbach and Miller,
         2011): V = c_G V_unit + c_T V_time - c_n V_obs, with c_G = G/(G-1), c_T = T/(T-1) and
         c_n = n/(n-K).  If the combination is negative (possible in finite samples) the unit-
-        clustered variance is used.  Split aggregation as in _functional."""
+        clustered variance (with the same small-sample factor as V) is used.  Split aggregation
+        as in _functional."""
         ests, vs = [], []
         n = len(self.unit_)
         G = len(np.unique(self.unit_))
@@ -437,7 +472,7 @@ class PanelDOSE:
             vt = np.sum((s["infl_t"] @ l) ** 2) * T / (T - 1)
             vh = np.sum((s["infl_h"] @ l) ** 2) * n / max(n - self.K_, 1)
             v = vu + vt - vh
-            vs.append(v if v > 0 else vu)
+            vs.append(v if v > 0 else float(l @ s["V"] @ l))
             ests.append(float(s["b"] @ l))
         ests = np.array(ests)
         med = np.median(ests)
@@ -448,7 +483,7 @@ class PanelDOSE:
         rd = [r[1] for r in self._raw] if self.z_in_controls else None
         if rd is None or rd[0] is None:
             return None
-        rdw = np.mean([within_two_way(x, self.unit_, self.time_) for x in rd], axis=0)
+        rdw = np.mean([self._w(x) for x in rd], axis=0)
         out = {"all": float(np.var(rdw) / np.var(self._Dw)),
                "all_total": float(np.var(rdw) / np.var(self._D))}
         for k, m in (masks or {}).items():

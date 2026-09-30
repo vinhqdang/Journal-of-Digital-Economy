@@ -1,24 +1,24 @@
 {
  "A": {
-  "lambda": 17.78279410038923,
-  "contrast": -0.9430804945042732,
-  "contrast_se": 3.389366487125407,
-  "fedml": -2.7898357472822437,
+  "lambda": 562.341325190349,
+  "contrast": -0.6984320137482378,
+  "contrast_se": 3.597935178758168,
+  "fedml": -2.641684710053424,
   "sd_treatment_residual": 0.06655818443595905,
-  "outcome_contrast": -0.943080494504265,
-  "outcome_fedml": -2.7898357472822437,
-  "treatment_contrast": -0.3259588317601183,
-  "treatment_fedml": -2.7898357472822437
+  "outcome_contrast": -0.698432013748165,
+  "outcome_fedml": -2.6416847100534238,
+  "treatment_contrast": -0.5363751249057997,
+  "treatment_fedml": -2.6416847100534246
  },
  "B": {
   "lambda": 1.0,
-  "contrast": -0.5510870097500664,
-  "contrast_se": 3.1060876084988522,
-  "fedml": -2.7898357472822437,
+  "contrast": -0.761079849525698,
+  "contrast_se": 3.270255883084991,
+  "fedml": -2.641684710053424,
   "sd_treatment_residual": 0.06655818443595905,
-  "outcome_contrast": -0.5510870097500686,
-  "outcome_fedml": -2.7898357472822437,
-  "treatment_contrast": -0.5510870097500642,
-  "treatment_fedml": -2.789835747282244
+  "outcome_contrast": -0.7610798495256986,
+  "outcome_fedml": -2.6416847100534238,
+  "treatment_contrast": -0.7610798495257015,
+  "treatment_fedml": -2.6416847100534238
  }
 }

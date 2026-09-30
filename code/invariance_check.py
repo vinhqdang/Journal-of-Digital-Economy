@@ -13,15 +13,14 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from empirical import fit_dose  # noqa: E402
+from empirical import fit_dose, tercile_masks  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def contrast(m):
-    z = m._Z
-    q1, q2 = np.quantile(z, [1 / 3, 2 / 3])
-    return m.group_contrast(z > q2, z <= q1)
+    lo, _, hi = tercile_masks(m, None)
+    return m.group_contrast(hi, lo)
 
 
 def main():
