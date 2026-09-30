@@ -1,0 +1,924 @@
+\documentclass[pdflatex,sn-basic]{sn-jnl}% Springer Nature author-year reference style
+
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage[title]{appendix}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{bm}
+\usepackage{adjustbox}
+\graphicspath{{../figures/}{../}}
+
+\theoremstyle{thmstyleone}
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{thmstyletwo}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\M}{\mathcal{M}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+% Keep the sn-jnl table fonts but drop its automatic threeparttable wrapper,
+% so that wide tables can be scaled to the text width.
+\renewenvironment{table}[1][]{\begin{tableorg}[#1]\centering\tablebodyfont}{\end{tableorg}}
+
+\raggedbottom
+
+\begin{document}
+
+\title[Searching for the digital dividend]{Searching for the digital dividend: Internet diffusion and productivity growth in 141 economies, 1996--2025}
+
+\author*[1]{\fnm{Quang-Vinh} \sur{Dang}}\email{vinh.dq4@buv.edu.vn}
+
+\affil*[1]{\orgname{British University Vietnam}, \orgaddress{\city{Hung Yen}, \country{Vietnam}}}
+
+\abstract{Does internet diffusion raise productivity growth, and where? We study 141 economies over 1996--2025 with Panel-DOSE, a debiased machine-learning estimator for fixed-effects panels that recovers how the association between a continuous treatment and an outcome varies with a moderator. It combines cross-fitted nuisance functions with Mundlak features, a within transformation and a penalised spline. In simulations it has the lowest error among the estimators compared when the effect varies and confounding is strongly nonlinear. Within countries, a ten-point rise in the internet-user share is followed by 0.22 percentage points lower productivity growth in the next year (95\% interval $-0.46$ to $0.02$), and the cumulative association stays negative over longer horizons. The association does not vary robustly with schooling, initial productivity or time since take-off. A positive gradient along initial productivity appears in the 10.0 release of the Penn World Table but shrinks by two thirds in the 11.0 release for the same country-years, mainly because growth rates were revised. The estimates are conditional associations; they do not support a short-run productivity dividend.}
+
+\keywords{Internet diffusion, Labor productivity, Double machine learning, Heterogeneous effects, Panel data, Data revisions}
+
+\pacs[JEL Classification]{C14, C23, C55, O33, O47}
+
+\maketitle
+
+
+%% ===========================================================================
+\section{Introduction}\label{sec:intro}
+
+The expectation that digital technologies deliver a ``digital dividend'' in the form of faster productivity growth is central to development strategies and to much of the digital-economy literature \citep{worldbank2016wdr,goldfarb2019digital}. The empirical record is more mixed than this expectation suggests. Early macro studies of telecommunications and broadband report large growth effects \citep{roller2001telecom,koutroumpis2009broadband,czernich2011broadband}, and growth accounting attributes much of the late-1990s US productivity revival to information technology \citep{jorgenson2008retro,jorgenson2016ict}. Firm-level studies find large returns mainly where technology is combined with organisational change and skilled labour \citep{brynjolfsson2000beyond,bresnahan2002it,bloom2012americans}, while cross-country evidence for developing and emerging economies is weaker \citep{niebel2018ict,vu2020ict,cardona2013ict}. Recent contributions to this journal likewise emphasise that the consequences of digitalisation depend on the structure of the economy and on how digital inputs enter production \citep{banga2026digitalisation,chen2026production}.
+
+A common thread is heterogeneity. The returns to a new technology are expected to depend on the capacity to absorb it, proxied by human capital \citep{nelson1966,benhabib1994,cohen1990absorptive}; on distance to the technological frontier \citep{acemoglu2006frontier}; and on how long the technology has been in use, because general-purpose technologies require complementary intangible investment that depresses measured productivity before raising it \citep{brynjolfsson2021jcurve}. Each argument predicts a specific shape of the function linking the effect of adoption to a characteristic of the adopting economy. Testing these predictions requires an estimator that recovers that function without imposing a linear interaction and without a linear control function, because the determinants of productivity growth and of adoption---income, demography, openness, urbanisation---interact nonlinearly.
+
+This paper asks whether, over three decades of internet diffusion, a productivity dividend can be detected in aggregate data, and whether it varies in the ways these theories predict. We combine World Bank productivity data and International Telecommunication Union (ITU) adoption data for 141 economies over 1996--2025 with schooling data from the United Nations Development Programme (UNDP), and we compare the results with two releases of the Penn World Table (PWT) \citep{feenstra2015pwt,pwt11}. To estimate how the association varies with a moderator we use Panel-DOSE (Panel Debiased Orthogonal Sieve Estimator), which approximates the varying coefficient by a penalised spline and estimates it from Neyman-orthogonal moments with machine-learning nuisance functions, Mundlak features, cross-fitting by country and a two-way within transformation.
+
+Three findings stand out. First, within countries, higher internet use is followed by slightly lower, not higher, labour-productivity growth: $-0.22$ percentage points (pp) per ten-point rise in the internet-user share in the following year, with a 95\% interval that excludes gains above 0.02 pp. Local projections, five-year averages and several control sets give the same sign, although the magnitude depends on which other information and communication technology (ICT) measures are held fixed. By contrast, a cross-country long difference shows that economies with larger increases in internet use grew faster between 2000 and 2024. This is the pattern that motivates the dividend narrative, but it is confounded by cross-country differences that fixed effects remove. Second, we find no robust variation of the within-country association with schooling, with initial productivity or with the time elapsed since internet take-off. The shapes are occasionally suggestive---a more negative association in the first years after take-off, as a productivity J-curve would predict---but none survives the pre-specified tests. Third, conclusions about heterogeneity depend on the data. With the same specification, the gradient along initial productivity is large and significant in the 10.0 release of the Penn World Table, smaller in the 11.0 release and absent in World Bank data. On the 2,565 country-years common to the two PWT releases, the difference between them is statistically significant and is driven mainly by revised growth rates. This extends to the ICT literature the evidence of \citet{johnson2013newer} that PWT revisions change growth results.
+
+The paper also makes a methodological contribution, which we state modestly. Panel-DOSE combines known components: orthogonal series estimation of causal functions \citep{semenova2021cate}, the correlated-random-effects and within-group variants of panel double/debiased machine learning (DML) \citep{clarke2023panel}, cross-fitting by clusters, and O'Sullivan penalised splines \citep{osullivan1986,wand2008osullivan}. We show that the combination is Neyman-orthogonal, that the within step makes the moment invariant to additive country or year errors in the outcome nuisance, and that when the moderator is a control only two nuisance functions are needed whatever the flexibility of the sieve. Relative to the panel heterogeneous-effect estimator of \citet{semenova2023panel}, which targets a finite-dimensional projection of the conditional effect under weak time dependence, Panel-DOSE targets a nonparametric function of a single moderator with a continuous treatment under two-way fixed effects and cluster sampling; relative to \citet{klosin2022continuous} and \citet{colangelo2026continuous}, who estimate average partial effects or dose-response functions, it targets effect heterogeneity. Monte Carlo experiments, including a plasmode design built on the empirical panel \citep{franklin2014plasmode}, show where the estimator helps and where it does not. It has the lowest integrated error among the estimators we compare when the effect varies and the confounding is strongly nonlinear, and most of the gain comes from the Mundlak features. A two-way fixed-effects (TWFE) regression with spline controls does as well when the confounding is only mildly nonlinear, and confidence intervals from linear interaction models are unreliable.
+
+Section~\ref{sec:lit} reviews the literature and states the predictions we test. Section~\ref{sec:method} presents the estimator. Section~\ref{sec:sim} reports the simulations and Section~\ref{sec:emp} the application. Section~\ref{sec:disc} discusses interpretation, policy and limitations, and Section~\ref{sec:concl} concludes. The online appendix contains proofs (Appendix~\ref{app:proofs}), data and implementation details (Appendix~\ref{app:data}) and additional results (Appendix~\ref{app:tables}).
+
+%% ===========================================================================
+\section{Related literature and predictions}\label{sec:lit}
+
+\subsection{ICT, broadband and aggregate growth}
+
+\citet{roller2001telecom} estimate a structural model of telecommunications investment and output for OECD countries and find large growth effects of network roll-out; \citet{koutroumpis2009broadband} obtains similar results for broadband. \citet{czernich2011broadband} instrument broadband penetration with pre-existing voice and cable networks and find that a ten-point increase raised annual per-capita growth by 0.9--1.5 pp in OECD countries. Growth accounting documents large contributions of ICT capital in advanced economies and, increasingly, in emerging economies \citep{jorgenson2008retro,jorgenson2016ict}. Surveys of the ICT--productivity literature conclude that estimated returns are positive on average but heterogeneous and sensitive to the level of aggregation and to method \citep{cardona2013ict,vu2020ict}. \citet{niebel2018ict} finds no larger returns to ICT capital in developing than in developed economies. For the developing world, \citet{hjort2019internet} show that the arrival of submarine cables raised employment in Africa, and \citet{hjort2025connectivity} review a literature that finds positive effects of connectivity on employment and firm outcomes but little direct evidence on aggregate productivity.
+
+\subsection{Complementarities, diffusion and capabilities}
+
+At the firm and worker level, the productivity gains from digital technologies depend on skills and organisation. Broadband raised the productivity of skilled workers and lowered that of unskilled workers in Norway \citep{akerman2015broadband}; US multinationals obtained higher returns to IT than comparable European firms because of their management practices \citep{bloom2012americans}. OECD work finds that digital adoption and its productivity pay-off are concentrated in firms and industries with the capabilities to use it \citep{gal2019digitalisation,nicoletti2020diffusion}. At the country level, \citet{comin2010diffusion} and \citet{comin2018diffusion} show that adoption lags have fallen but the intensity of use still differs widely across countries, so that access and use diverge. Recent contributions to this journal study how digitalisation relates to structural change across countries \citep{banga2026digitalisation} and how data and digital inputs can be represented in aggregate production functions \citep{chen2026production}; the productivity channel we study complements the structural-change channel emphasised by \citet{banga2026digitalisation}. Machine-learning methods are also increasingly used in this journal to predict firm outcomes \citep{xu2026carbon}; we use them instead to control flexibly for confounders when estimating a heterogeneous association.
+
+\subsection{Measurement and data revisions}
+
+Cross-country growth regressions are sensitive to the release of the data. \citet{johnson2013newer} show that growth rates in successive PWT releases differ substantially for the same countries and years, and that the revisions change the results of growth regressions; \citet{ponomareva2010pwt} show the same for the growth--volatility relationship. Mismeasurement of digital output has also been proposed as an explanation for the post-2005 productivity slowdown, although it accounts for only a small part of it \citep{byrne2016mismeasurement,syverson2017mismeasurement}. Our vintage comparison applies this insight to heterogeneous effects of internet diffusion and decomposes the revision into outcome, moderator and control components.
+
+\subsection{Machine learning for heterogeneous and continuous effects}
+
+Double/debiased machine learning \citep{chernozhukov2018dml} generalises the partialling-out estimator of \citet{robinson1988}. \citet{clarke2023panel} extend it to static panels with fixed effects through correlated-random-effects, within-group and first-difference implementations of a constant coefficient. \citet{semenova2023panel} estimate heterogeneous effects in high-dimensional dynamic panels under weak dependence, targeting the best linear predictor of the conditional effect in a set of covariates. \citet{semenova2021cate} project orthogonal signals on series bases to estimate causal functions. For continuous treatments, \citet{colangelo2026continuous} estimate dose-response functions and partial effects with kernel-based DML, and \citet{klosin2022continuous} estimate average partial derivatives in panels with unit effects. Causal forests and the R-learner estimate conditional effects in cross-sectional data \citep{wager2018forest,athey2019grf,nie2021quasi}. The TWFE literature shows that linear fixed-effects regressions with heterogeneous or continuous treatments estimate weighted averages whose weights can be negative or hard to interpret \citep{dechaisemartin2020twfe,callaway2024continuous}. Panel-DOSE targets a different estimand from these methods: the function $\theta(z)$ describing how the association of a continuous treatment with the outcome varies with a scalar moderator, under two-way fixed effects and dependence within countries. Its components are known; what the paper adds is their combination for this estimand, the associated properties, and evidence on when the combination helps.
+
+\subsection{Predictions}\label{sec:pred}
+
+We translate the theories into predictions on the shape of $\theta(\cdot)$ in model~\eqref{eq:model} below. Absorptive capacity \citep{nelson1966,benhabib1994,akerman2015broadband} predicts that $\theta$ increases with schooling. Leapfrogging arguments, in which the internet lowers information and transaction costs most where they are highest \citep{hjort2019internet}, predict that $\theta$ decreases with initial productivity; frontier-based arguments \citep{acemoglu2006frontier} allow either sign. The productivity J-curve \citep{brynjolfsson2021jcurve} predicts that $\theta$ is negative in the first years after a country's adoption takes off and rises with time since take-off. Network effects predict a marginal effect of adoption $f'(d)$ that rises with the level of adoption; saturation predicts that it falls. Finally, if the gains accumulate slowly, cumulative associations over several years should exceed the one-year association.
+
+%% ===========================================================================
+\section{Methodology}\label{sec:method}
+
+\subsection{Model and target parameters}
+
+We observe a panel $\{(Y_{it},D_{it},X_{it}) : i=1,\dots,G;\ t=1,\dots,T_i\}$ of $G$ countries, where $Y_{it}$ is an outcome (productivity growth), $D_{it}\in\mathbb{R}$ is a continuous treatment (the lagged internet-user share) and $X_{it}\in\mathbb{R}^p$ collects controls that include the moderator $Z_{it}$. The varying-coefficient model is
+\begin{equation}
+Y_{it} = \theta(Z_{it})\,D_{it} + g(X_{it}) + \alpha_i + \lambda_t + \varepsilon_{it},
+\label{eq:model}
+\end{equation}
+in which $g(\cdot)$ is an unknown control function and $(\alpha_i,\lambda_t)$ are country and year effects. Under the assumptions below, $\theta(z)$ is the change in $Y$ associated with a unit change in $D$ for an economy with moderator value $z$, holding the controls and fixed effects constant. We call it an effect for brevity, but in the application it is a conditional association (Section~\ref{sec:disc}). The dose-response variant replaces $\theta(Z_{it})D_{it}$ by $f(D_{it})$ and targets $f'(d)$.
+
+We report four summaries of $\theta(\cdot)$. The \emph{headline average} is the constant-effect coefficient $\bar\theta_w$ obtained when the sieve has a single basis function, i.e.\ the FE-DML estimator of \citet{clarke2023panel}. It equals a weighted average of $\theta(Z_{it})$ with weights proportional to the residual variance of $D_{it}$ given the controls. The \emph{sample-average effect} is $\bar\theta=\E[\theta(Z_{it})]$, which weights country-years equally. The two coincide when $\theta$ is constant and differ otherwise; we report both and treat $\bar\theta_w$ as the headline because it does not depend on the sieve. The \emph{group-average effects} $\bar\theta_A=\E[\theta(Z_{it})\mid Z_{it}\in A]$ use the terciles of $Z$, and the \emph{best linear projection (BLP) slope} is $\gamma=\mathrm{Cov}(\theta(Z_{it}),Z_{it})/\mathrm{Var}(Z_{it})$, computed over the estimation sample.
+
+\subsection{Identification}
+
+Write $F_{it}=(X_{it},\bar X_i,\bar D_i,\bar Z_i,t)$ for the controls augmented by their country averages and a time index.
+
+\begin{assumption}[Conditional strict exogeneity]\label{as:exo}
+$\E[\varepsilon_{it}\mid D_{i1},\dots,D_{iT_i},X_{i1},\dots,X_{iT_i},\alpha_i]=0$ for all $t$.
+\end{assumption}
+
+\begin{assumption}[Correlated random effects in the nuisance step]\label{as:cre}
+$\E[\alpha_i\mid F_{it}]=h(\bar X_i,\bar D_i,\bar Z_i)$ for some function $h$ that does not depend on $t$.
+\end{assumption}
+
+\begin{assumption}[Nuisance sufficiency]\label{as:suff}
+$\E[D_{it}\mid F_{i1},\dots,F_{iT_i}]=\E[D_{it}\mid F_{it}]$ for all $t$.
+\end{assumption}
+
+Assumption~\ref{as:exo} is the strict-exogeneity condition of static fixed-effects models. It fails mechanically if the controls contain lagged levels or growth of the outcome variable: with $Y_{it}=\Delta\ln \mathrm{LP}_{it}$, the control $\ln \mathrm{LP}_{i,t}$ that enters at $t+1$ contains $Y_{it}$, and so does its country mean. Our baseline therefore excludes lagged productivity levels and lagged growth, uses initial (pre-sample) productivity instead, and forms Mundlak averages only of controls that are not functions of the outcome. Assumption~\ref{as:cre} is a nonparametric version of the Mundlak device \citep{mundlak1978,wooldridge2010}: the conditional mean of the country effect given the augmented controls may be any function of the country averages. The part of $\alpha_i$ it leaves unexplained, $a_i=\alpha_i-h(\cdot)$, is removed by the within transformation. Assumption~\ref{as:suff} requires that the augmented controls of period $t$ summarise the information in the whole control path that is relevant for predicting adoption; the Mundlak averages are included to carry that country-level information. Finally, $D$ must vary after conditioning on $F$ and removing country and year means; we report this residual variation in Section~\ref{sec:emp}.
+
+Let $b(z)=(b_1(z),\dots,b_K(z))'$ be a cubic B-spline basis with interior knots at quantiles of $Z$, write $\theta(z)=b(z)'\beta+r_K(z)$, define the sieve regressors $\Phi_{it}=D_{it}\,b(Z_{it})$, and the nuisance functions $\ell(F)=\E[Y\mid F]$ and $m(F)=\E[\Phi\mid F]$. Let $\M$ be the two-way within operator (for unbalanced panels, computed by alternating projections). The population moment is
+\begin{equation}
+\psi(\beta;\ell,m)=\E\Big[\sum_t \M\big(\Phi-m(F)\big)_{it}\,\Big\{\M\big(Y-\ell(F)\big)_{it}-\M\big(\Phi-m(F)\big)_{it}'\beta\Big\}\Big]=0 .
+\label{eq:moment}
+\end{equation}
+Under Assumptions~\ref{as:exo}--\ref{as:suff} and $r_K=0$, $Y-\ell(F)-(\Phi-m(F))'\beta=a_i+\varepsilon_{it}$, because $\lambda_t$ is a function of the time index in $F$. The term $a_i$ is removed by $\M$ and $\varepsilon_{it}$ is mean-independent of the whole path of $F$, so the true $\beta$ solves~\eqref{eq:moment}.
+
+\subsection{Properties}
+
+\begin{proposition}[Orthogonality and invariance]\label{prop:orth}
+Let Assumptions~\ref{as:exo}--\ref{as:suff} hold.
+(i) \emph{Neyman orthogonality:} for any directions $(\delta_\ell,\delta_m)$, $\partial_r\psi(\beta_0;\ell_0+r\delta_\ell,m_0+r\delta_m)\big|_{r=0}=0$.
+(ii) \emph{Invariance for the outcome nuisance:} for any country-specific and year-specific constants $c_i,c_t$, $\psi(\beta;\ell+c_i+c_t,\,m)=\psi(\beta;\ell,m)$ for all $\beta$. The same holds for additive errors $d_i+d_t\in\mathbb{R}^K$ in $m$; but when $m=b(Z)\mu$ (Proposition~\ref{prop:struct}), an error $c_i$ in $\mu$ enters as $b(Z_{it})c_i$ and is removed exactly only if $K=1$ or $b(Z_{it})$ is constant within country.
+\end{proposition}
+
+Part (i) makes the estimator insensitive to first-order errors in the machine-learning fits. Part (ii) says that any error in the outcome learner that takes the form of a country or year shift---a natural failure mode when trees approximate fixed effects through country averages---has no effect on the estimate. For the treatment nuisance the invariance is exact only for the constant-effect estimator; with a varying coefficient, country-level errors in $\hat\mu$ still enter, although only at second order by part (i). A numerical check on the empirical sample confirms both statements (Appendix~\ref{app:data}).
+
+\begin{proposition}[Structure-aware residualisation]\label{prop:struct}
+If $Z_{it}$ is an element of $F_{it}$, then $m_k(F)=b_k(Z)\,\mu(F)$ with $\mu(F)=\E[D\mid F]$. Hence the orthogonalised sieve regressors are $b(Z_{it})\{D_{it}-\mu(F_{it})\}$, and only $\ell$ and $\mu$ need to be learned, whatever the sieve dimension $K$.
+\end{proposition}
+
+Proposition~\ref{prop:struct} follows from $\E[D\,b_k(Z)\mid F]=b_k(Z)\E[D\mid F]$. It reduces the number of learners from $K+1$ to two, avoids fitting $K$ separate regressions for highly collinear spline regressors, and allows the sieve (number of knots, penalty, or a linear basis) to be changed after the nuisance step without refitting. It also implies that the constant-effect FE-DML estimate is obtained from the same residuals. In the dose-response model, $\Phi$ is a basis in $D$ and the $K$ conditional means are learned separately.
+
+\subsection{The Panel-DOSE algorithm}
+
+The final stage minimises a penalised least-squares criterion in the orthogonalised variables,
+\begin{equation}
+\hat\beta_\lambda=\argmin_\beta \ \sum_{i,t}\big(\tilde Y_{it}-\tilde\Phi_{it}'\beta\big)^2+\lambda\,\kappa\,\beta'\Omega\beta,\qquad \Omega=\int b''(z)\,b''(z)'\,dz,
+\label{eq:pls}
+\end{equation}
+where $\tilde Y=\M(Y-\hat\ell)$, $\tilde\Phi=\M(\Phi-\hat m)$, $\Omega$ is the O'Sullivan penalty \citep{osullivan1986,wand2008osullivan} and $\kappa=\mathrm{tr}(\tilde\Phi'\tilde\Phi)/\mathrm{tr}(\Omega)$ makes $\lambda$ scale-free. Because $\beta'\Omega\beta$ is the integrated squared second derivative of $b(z)'\beta$, its null space consists exactly of the linear functions, whatever the knot placement, so a large $\lambda$ shrinks $\theta$ towards a linear function.\footnote{The second-difference penalty of \citet{eilers1996} has this property only for equally spaced knots; with knots at quantiles of a skewed moderator its null space contains nonlinear functions.} We choose $\lambda$ by ten-fold cross-validation in which the folds are formed by countries, over $\lambda\in\{0\}\cup\{10^{-6},\dots,10^{4}\}$, and report the selected $\lambda$ and the effective degrees of freedom $\mathrm{edf}=\mathrm{tr}\{(\tilde\Phi'\tilde\Phi+\lambda\kappa\Omega)^{-1}\tilde\Phi'\tilde\Phi\}$. At the upper end of the grid the fit is effectively linear ($\mathrm{edf}\approx2$). Algorithm~\ref{alg:dose} summarises the procedure.
+
+\begin{algorithm}[t]
+\caption{Panel-DOSE}\label{alg:dose}
+\begin{algorithmic}[1]
+\Require Panel $(Y_{it},D_{it},X_{it},Z_{it})$; learner $\mathcal{L}$; folds $L$; repetitions $S$; knots $q$
+\State Build $F_{it}=(X_{it},\bar X_i,\bar D_i,\bar Z_i,t)$ and the cubic B-spline basis $b(\cdot)$ with $q$ interior knots at quantiles of $Z$
+\For{$s=1,\dots,S$}
+  \State Randomly partition the \emph{countries} into $L$ folds $I_1,\dots,I_L$
+  \For{$l=1,\dots,L$}
+    \State Fit $\hat\ell^{(-l)}$ and $\hat\mu^{(-l)}$ by $\mathcal{L}$ on countries not in $I_l$
+    \State For $i\in I_l$: $\hat e^Y_{it}=Y_{it}-\hat\ell^{(-l)}(F_{it})$, \ $\hat e^\Phi_{it}=b(Z_{it})\{D_{it}-\hat\mu^{(-l)}(F_{it})\}$
+  \EndFor
+  \State Two-way demean: $\tilde Y=\M\hat e^Y$, $\tilde\Phi=\M\hat e^\Phi$
+  \State Choose $\hat\lambda_s$ by leave-countries-out cross-validation; compute $\hat\beta_s$ from~\eqref{eq:pls} and $\hat V_s$ from~\eqref{eq:vcov}
+\EndFor
+\State For each reported functional $w'\beta$: estimate $\mathrm{med}_s\,w'\hat\beta_s$, variance $\mathrm{med}_s\{w'\hat V_sw+(w'\hat\beta_s-\mathrm{med}_s\,w'\hat\beta_s)^2\}$
+\State \Return $\hat\theta(z)$ with pointwise and simultaneous bands, group averages, BLP slope and shape tests
+\end{algorithmic}
+\end{algorithm}
+
+Cross-fitting by countries rather than by observations is essential in a panel: with observation-level folds, the learner is trained on other years of the same country and partly reproduces its own country effect. Repeating the split $S$ times and aggregating by the median, functional by functional, with the variance adjustment of \citet{chernozhukov2018dml}, removes the dependence on a particular partition.
+
+\subsection{Inference}
+
+Let $A_\lambda=\tilde\Phi'\tilde\Phi+\lambda\kappa\Omega$ and $\hat u_{it}=\tilde Y_{it}-\tilde\Phi_{it}'\hat\beta$. The cluster-robust covariance estimator is
+\begin{equation}
+\hat V=c_n\,A_\lambda^{-1}\Big(\sum_{i=1}^G \hat s_i\hat s_i'\Big)A_\lambda^{-1},\qquad \hat s_i=\sum_t\tilde\Phi_{it}\hat u_{it},
+\label{eq:vcov}
+\end{equation}
+with $c_n=\frac{G}{G-1}\frac{n-1}{n-K}$ \citep{cameron2015cluster}. Standard errors of linear functionals $w'\beta$ follow directly. Simultaneous bands over a grid use the sup-$t$ critical value from the correlation matrix of the estimated function \citep{montiel2019bands}. We test whether $\theta$ is constant, and whether it is linear, with sup-$t$ statistics on a 25-point grid of moderator quantiles. The statistic is the maximum absolute $t$-ratio of the centred (or linearly detrended) function, and its null distribution is simulated from the corresponding, possibly rank-deficient, covariance matrix, so no matrix inversion is required.\footnote{Wald tests on differences of spline coefficients require inverting a near-singular covariance and produced degenerate statistics in an earlier version of this analysis; we no longer use them.} For each moderator, the constancy test is the pre-specified primary test of heterogeneity, and we adjust the three primary tests (one per moderator) by the method of \citet{holm1979}. Tercile contrasts and BLP slopes are descriptive summaries, and robustness checks are not treated as additional hypotheses. To compare two estimates computed on the same countries, such as those from the two PWT releases, we use their country-level influence contributions $w'A_\lambda^{-1}\hat s_i$, which give the covariance of the two estimates. We also report two-way (country and year) clustered standard errors for the baseline.
+
+\begin{assumption}[Regularity]\label{as:reg}
+(a) Countries are independent, $G\to\infty$, and $T_i\le\bar T<\infty$. (b) The cross-fitted nuisance estimators satisfy $\|\hat\mu-\mu\|_2\,(\|\hat\mu-\mu\|_2+\|Q(\hat\ell-\ell)\|_2)=o_p(G^{-1/2})$ and $\|\hat\ell-\ell\|_2=o_p(1)$, where $Q$ removes country means: by Proposition~\ref{prop:orth}(ii), only the within-country error of $\hat\ell$ matters, whereas the full error of $\hat\mu$ enters. (c) $J=\E[\sum_t\tilde\Phi^0_{it}\tilde\Phi^{0\prime}_{it}]$ is positive definite and fourth moments are bounded. (d) $K$ is fixed and $\lambda_G\sqrt G\to0$.
+\end{assumption}
+
+\begin{proposition}[Asymptotic normality]\label{prop:an}
+Under Assumptions~\ref{as:exo}--\ref{as:reg} and the conditions of Proposition~\ref{prop:struct}, $\sqrt G(\hat\beta-\beta_K)\xrightarrow{d}N(0,J^{-1}\Omega_s J^{-1})$, where $\beta_K$ is the sieve pseudo-true value and $\Omega_s=\E[s_is_i']$ with $s_i=\sum_t\tilde\Phi^0_{it}u_{it}$, and $G\hat V\xrightarrow{p}J^{-1}\Omega_s J^{-1}$.
+\end{proposition}
+
+\begin{remark}\label{rem:scope}
+Proposition~\ref{prop:an} is a fixed-$K$ result for the unpenalised (or asymptotically unpenalised) sieve. It delivers inference on the pseudo-true function $b(z)'\beta_K$ and on functionals of it---group averages, contrasts and the BLP slope of the best spline approximation---not on $\theta(z)$ itself. Under misspecification, the average of $b(Z)'\beta_K$ is a weighted average of $\theta(Z)$ with the weights implied by the projection. Inference on $\theta(z)$ with $K\to\infty$ would require the conditions of \citet{belloni2015series} and \citet{semenova2021cate}, which we do not verify for panels. The cross-validated penalty in the application does not vanish with $G$, so the theorem does not cover it; we therefore evaluate its inference by simulation. In the plasmode design of Section~\ref{sec:plasmode}, penalised intervals and tests are close to nominal while the unpenalised sup-$t$ test over-rejects. We use the penalised fit as the primary specification for that reason and report the unpenalised fit as a robustness check.
+\end{remark}
+
+%% ===========================================================================
+\section{Monte Carlo evidence}\label{sec:sim}
+
+\subsection{Stylised design}
+
+The first design mimics a macro panel of $G=100$ countries observed for $T=24$ years. Each country has a fixed effect $\alpha_i\sim N(0,1)$ and there is a random-walk year effect. Five controls follow $X_{it}=0.6X_{i,t-1}+0.4(\eta_{it}+0.5\alpha_i)$ with $\eta_{it}\sim N(0,I_5)$. The moderator $Z_{it}\in[0,1]$ trends slowly around a country-specific level that is correlated with the country effect through $\mathbb{1}\{\alpha_i>0\}$. Adoption follows a logistic diffusion index,
+\[
+D_{it}=\Lambda\big(-3+0.22t+0.6\alpha_i+0.8\sin(1.5X_{1it})+0.6X_{2it}\mathbb{1}\{X_{3it}>0\}+1.5Z_{it}+v_{it}\big),
+\]
+where $\Lambda$ is the logistic function and $v_{it}\sim N(0,1)$, and the outcome is $Y_{it}=\theta(Z_{it})D_{it}+g(X_{it},Z_{it})+\alpha_i+\lambda_t+\varepsilon_{it}$ with $\varepsilon_{it}\sim N(0,0.25)$ and
+\[
+g=\rho\big\{1.5\sin(1.5X_{1it})+X_{2it}\mathbb{1}\{X_{3it}>0\}+0.5|X_{4it}|+3.2(Z_{it}-0.5)^2\big\}.
+\]
+The four effect functions are \emph{constant} $\theta(z)=1$, \emph{linear} $-0.5+3z$, \emph{threshold} $-0.5+2.5/(1+e^{-12(z-0.5)})$ and \emph{hump} $2-8(z-0.5)^2$. The baseline sets $\rho=1$; for the threshold design we vary the confounding strength ($\rho\in\{0.25,0.5,2\}$) and the number of countries ($G\in\{50,200\}$). This design favours flexible estimators by construction, since the confounding is strongly nonlinear and the residual variation in adoption is larger than in the application; the plasmode design below addresses this.
+
+We compare twelve estimators: (1) TWFE with a constant effect; (2) TWFE with $D\times Z$ and $D\times Z^2$; (3) TWFE-spline, with additive spline expansions of every control and a spline in $Z$ for the effect; (4) FE-DML with a constant effect \citep{clarke2023panel}; (5) a boosted R-learner \citep{nie2021quasi} fitted to the FE-DML residuals, with its hyper-parameters chosen by country-level cross-validation; (6) a within-group DML sieve, which learns the nuisance functions on two-way demeaned data, in the spirit of the within-group estimator of \citet{clarke2023panel}; (7) a pooled DML sieve without Mundlak features or within step; (8) an ablation with Mundlak features but no within step; (9) an ablation with the within step but no Mundlak features; (10) Panel-DOSE without penalty; (11) Panel-DOSE; and (12) an infeasible oracle that uses the true nuisance functions. All machine-learning estimators use LightGBM \citep{ke2017lightgbm} with 600 trees, five country-level folds and two repetitions of the split; the sieve estimators use four interior knots. We replicate each design 100 times (50 in the sensitivity analysis) and report the integrated root-mean-squared error (IRMSE) over 17 grid points in $[0.1,0.9]$, the integrated bias, the RMSE of the high-minus-low tercile contrast, and the coverage of nominal 95\% intervals with Monte Carlo standard errors.
+
+\subsection{Results of the stylised design}
+
+Table~\ref{tab:sim} and Figure~\ref{fig:simirmse} report accuracy, and Table~\ref{tab:simcover} reports coverage. Linear fixed-effects models are heavily biased because the control function is nonlinear and correlated with adoption. The quadratic interaction does not help: its errors are identical in the constant, linear and hump designs because these effect functions lie in the span of its regressors, so the problem is the control function, not the flexibility of the effect. TWFE with spline controls removes most of the bias but keeps an integrated bias of about 0.23.
+
+Among the flexible estimators, Panel-DOSE has the lowest IRMSE in the three heterogeneous designs (0.16, 0.23 and 0.22 for the linear, threshold and hump designs), 20--47\% below TWFE-spline and 15--44\% below the tuned R-learner. The constant-effect FE-DML estimator is best when the effect is in fact constant. The ablations locate the gain. Dropping the Mundlak features multiplies the error by two to three (0.45--0.52), whereas dropping the within step raises it by 5--17\% (0.18--0.25), so the correlated-random-effects features do most of the work and the within step adds robustness. Learning the nuisance on demeaned data (the within-group sieve) performs poorly (0.70--0.92), because $g(X)$ minus its country mean is not a function of the demeaned controls when $g$ is nonlinear. The oracle shows that 15--23\% of the remaining error, and nearly all of the integrated bias, is due to the nuisance estimates.
+
+Coverage is below nominal in some cells. For Panel-DOSE, pointwise coverage is 0.81--0.91 and simultaneous coverage 0.58--0.87; it is worst in the threshold design, where the penalty smooths the steep part of the curve. The unpenalised sieve has pointwise coverage of 0.93--0.94 and simultaneous coverage of 0.83--0.88. Coverage of the smooth functionals is closer to nominal: 0.88--0.92 for the average effect, 0.91--0.97 for the tercile contrast and 0.89--0.95 for the BLP slope. With the oracle nuisance, average-effect coverage is 0.95--0.97, so the shortfall comes from regularisation bias in the nuisance step rather than from the variance estimator. The sup-$t$ constancy test rejects in 9\% of replications when the effect is constant (7\% without penalty), and in 94--100\% when it is not. Intervals from the TWFE-interaction model cover the true tercile contrast in only 3--17\% of replications, so its apparent precision is not informative when the control function is misspecified.
+
+The sensitivity analysis (Table~\ref{tab:simsens}) qualifies the ranking. With strong confounding ($\rho=2$) or with 50 or 200 countries, Panel-DOSE remains the most accurate estimator. With mild confounding ($\rho\le0.5$), TWFE-spline is more accurate (IRMSE 0.18--0.20 against 0.22), and at $\rho=0.25$ its pointwise intervals cover in 90\% of cases, so the gain from machine learning is specific to strongly nonlinear confounding. The cross-validated penalty never selects $\lambda=0$ and selects the upper end of the grid (an effectively linear fit) in 27\% of replications.
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Stylised Monte Carlo design: accuracy ($G=100$, $T=24$, $\rho=1$).}\label{tab:sim}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccccccccc}
+\toprule
+ & \multicolumn{4}{c}{IRMSE} & \multicolumn{4}{c}{Integrated bias} & \multicolumn{4}{c}{RMSE, high--low contrast}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}
+Estimator & Const. & Lin. & Thr. & Hump & Const. & Lin. & Thr. & Hump & Const. & Lin. & Thr. & Hump\\
+\midrule
+%% BEGIN tables/sim_main.tex (generated by code/make_outputs.py)
+TWFE & 0.63 & 0.94 & 1.15 & 1.05 & 0.63 & 0.57 & 0.60 & 0.96 & 0.00 & 1.41 & 2.07 & 0.17\\
+TWFE-interaction & 0.83 & 0.83 & 0.87 & 0.83 & 0.77 & 0.77 & 0.66 & 0.77 & 0.52 & 0.52 & 0.73 & 0.52\\
+TWFE-spline & 0.29 & 0.29 & 0.29 & 0.29 & 0.23 & 0.23 & 0.23 & 0.23 & 0.16 & 0.16 & 0.16 & 0.16\\
+FE-DML (constant) & \textbf{0.07} & 0.74 & 0.99 & 0.49 & 0.06 & 0.06 & 0.07 & 0.24 & 0.00 & 1.41 & 2.07 & 0.17\\
+FE-DML + R-learner (tuned) & 0.24 & 0.28 & 0.28 & 0.30 & 0.06 & 0.06 & 0.06 & 0.10 & 0.16 & 0.31 & 0.37 & 0.19\\
+WG-DML sieve & 0.61 & 0.74 & 0.70 & 0.92 & 0.53 & 0.45 & 0.48 & 0.81 & 0.40 & 0.78 & 0.68 & 0.31\\
+Pooled DML-sieve & 0.63 & 0.64 & 0.68 & 0.71 & 0.60 & 0.61 & 0.63 & 0.66 & 0.27 & 0.29 & 0.30 & 0.28\\
+Ablation: Mundlak only & 0.18 & 0.18 & 0.25 & 0.25 & 0.10 & 0.07 & 0.07 & 0.14 & 0.21 & 0.24 & 0.25 & 0.22\\
+Ablation: within only & 0.44 & 0.45 & 0.49 & 0.52 & 0.41 & 0.41 & 0.42 & 0.46 & 0.25 & 0.27 & 0.28 & 0.25\\
+Panel-DOSE (unpenalised) & 0.26 & 0.26 & 0.27 & 0.26 & 0.05 & 0.06 & 0.07 & 0.05 & 0.20 & 0.22 & 0.22 & 0.20\\
+Panel-DOSE & 0.15 & 0.15 & 0.23 & 0.22 & 0.05 & 0.06 & 0.06 & 0.08 & 0.19 & 0.20 & 0.22 & 0.20\\
+Panel-DOSE (oracle nuisance) & 0.12 & 0.12 & 0.20 & 0.18 & 0.00 & 0.00 & -0.00 & 0.03 & 0.18 & 0.18 & 0.19 & 0.18\\
+%% END tables/sim_main
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: averages over 100 replications. The lowest IRMSE among feasible estimators in each design is in bold; the oracle uses the true nuisance functions and is infeasible. IRMSE and integrated bias are computed over 17 grid points in $[0.1,0.9]$.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Stylised Monte Carlo design: coverage of nominal 95\% intervals.}\label{tab:simcover}
+\scriptsize
+\begin{tabular}{lccccc}
+\toprule
+Estimator & Pointwise & Simultaneous & Average & High--low & BLP slope\\
+\midrule
+%% BEGIN tables/sim_cover.tex (generated by code/make_outputs.py)
+\multicolumn{6}{l}{\textit{Design: constant $\theta(z)$}}\\
+\quad TWFE-interaction & 0.04 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.17 (0.04) & 0.17 (0.04)\\
+\quad TWFE-spline & 0.63 (0.02) & 0.31 (0.05) & 0.21 (0.04) & 0.93 (0.03) & 0.90 (0.03)\\
+\quad FE-DML (constant) & 0.91 (0.03) & 0.90 (0.03) & 0.91 (0.03) & 1.00 (0.00) & 0.91 (0.03)\\
+\quad WG-DML sieve & 0.24 (0.02) & 0.00 (0.00) & 0.00 (0.00) & 0.80 (0.04) & 0.71 (0.05)\\
+\quad Pooled DML-sieve & 0.12 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.91 (0.03) & 0.92 (0.03)\\
+\quad Ablation: Mundlak only & 0.88 (0.02) & 0.81 (0.04) & 0.80 (0.04) & 0.97 (0.02) & 0.95 (0.02)\\
+\quad Ablation: within only & 0.27 (0.02) & 0.04 (0.02) & 0.01 (0.01) & 0.95 (0.02) & 0.95 (0.02)\\
+\quad Panel-DOSE (unpenalised) & 0.93 (0.01) & 0.88 (0.03) & 0.90 (0.03) & 0.96 (0.02) & 0.93 (0.03)\\
+\quad Panel-DOSE & 0.91 (0.01) & 0.86 (0.03) & 0.92 (0.03) & 0.97 (0.02) & 0.95 (0.02)\\
+\quad Panel-DOSE (oracle nuisance) & 0.92 (0.01) & 0.85 (0.04) & 0.95 (0.02) & 0.93 (0.03) & 0.93 (0.03)\\
+\addlinespace
+\multicolumn{6}{l}{\textit{Design: linear $\theta(z)$}}\\
+\quad TWFE-interaction & 0.04 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.17 (0.04) & 0.17 (0.04)\\
+\quad TWFE-spline & 0.63 (0.02) & 0.31 (0.05) & 0.21 (0.04) & 0.93 (0.03) & 0.90 (0.03)\\
+\quad FE-DML (constant) & 0.14 (0.00) & 0.00 (0.00) & 0.98 (0.01) & 0.00 (0.00) & 0.00 (0.00)\\
+\quad WG-DML sieve & 0.37 (0.02) & 0.02 (0.01) & 0.10 (0.03) & 0.34 (0.05) & 0.23 (0.04)\\
+\quad Pooled DML-sieve & 0.12 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.92 (0.03) & 0.90 (0.03)\\
+\quad Ablation: Mundlak only & 0.91 (0.02) & 0.87 (0.03) & 0.89 (0.03) & 0.94 (0.02) & 0.94 (0.02)\\
+\quad Ablation: within only & 0.26 (0.02) & 0.05 (0.02) & 0.02 (0.01) & 0.90 (0.03) & 0.87 (0.03)\\
+\quad Panel-DOSE (unpenalised) & 0.94 (0.01) & 0.86 (0.03) & 0.93 (0.03) & 0.95 (0.02) & 0.91 (0.03)\\
+\quad Panel-DOSE & 0.90 (0.01) & 0.87 (0.03) & 0.90 (0.03) & 0.93 (0.03) & 0.91 (0.03)\\
+\quad Panel-DOSE (oracle nuisance) & 0.92 (0.01) & 0.85 (0.04) & 0.95 (0.02) & 0.93 (0.03) & 0.93 (0.03)\\
+\addlinespace
+\multicolumn{6}{l}{\textit{Design: threshold $\theta(z)$}}\\
+\quad TWFE-interaction & 0.16 (0.00) & 0.00 (0.00) & 0.00 (0.00) & 0.03 (0.02) & 0.00 (0.00)\\
+\quad TWFE-spline & 0.63 (0.02) & 0.31 (0.05) & 0.21 (0.04) & 0.93 (0.03) & 0.90 (0.03)\\
+\quad FE-DML (constant) & 0.07 (0.00) & 0.00 (0.00) & 0.99 (0.01) & 0.00 (0.00) & 0.00 (0.00)\\
+\quad WG-DML sieve & 0.43 (0.02) & 0.04 (0.02) & 0.05 (0.02) & 0.49 (0.05) & 0.44 (0.05)\\
+\quad Pooled DML-sieve & 0.19 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.92 (0.03) & 0.91 (0.03)\\
+\quad Ablation: Mundlak only & 0.82 (0.02) & 0.55 (0.05) & 0.90 (0.03) & 0.94 (0.02) & 0.94 (0.02)\\
+\quad Ablation: within only & 0.37 (0.02) & 0.02 (0.01) & 0.01 (0.01) & 0.91 (0.03) & 0.88 (0.03)\\
+\quad Panel-DOSE (unpenalised) & 0.93 (0.01) & 0.83 (0.04) & 0.88 (0.03) & 0.96 (0.02) & 0.90 (0.03)\\
+\quad Panel-DOSE & 0.81 (0.02) & 0.58 (0.05) & 0.88 (0.03) & 0.91 (0.03) & 0.89 (0.03)\\
+\quad Panel-DOSE (oracle nuisance) & 0.86 (0.02) & 0.71 (0.05) & 0.96 (0.02) & 0.95 (0.02) & 0.87 (0.03)\\
+\addlinespace
+\multicolumn{6}{l}{\textit{Design: hump $\theta(z)$}}\\
+\quad TWFE-interaction & 0.04 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.17 (0.04) & 0.17 (0.04)\\
+\quad TWFE-spline & 0.63 (0.02) & 0.31 (0.05) & 0.21 (0.04) & 0.93 (0.03) & 0.90 (0.03)\\
+\quad FE-DML (constant) & 0.30 (0.01) & 0.00 (0.00) & 0.73 (0.04) & 0.00 (0.00) & 0.00 (0.00)\\
+\quad WG-DML sieve & 0.08 (0.01) & 0.00 (0.00) & 0.00 (0.00) & 0.94 (0.02) & 0.94 (0.02)\\
+\quad Pooled DML-sieve & 0.11 (0.02) & 0.00 (0.00) & 0.00 (0.00) & 0.93 (0.03) & 0.92 (0.03)\\
+\quad Ablation: Mundlak only & 0.86 (0.02) & 0.71 (0.05) & 0.71 (0.05) & 0.95 (0.02) & 0.95 (0.02)\\
+\quad Ablation: within only & 0.28 (0.02) & 0.03 (0.02) & 0.00 (0.00) & 0.92 (0.03) & 0.93 (0.03)\\
+\quad Panel-DOSE (unpenalised) & 0.94 (0.01) & 0.87 (0.03) & 0.93 (0.03) & 0.96 (0.02) & 0.92 (0.03)\\
+\quad Panel-DOSE & 0.88 (0.01) & 0.69 (0.05) & 0.91 (0.03) & 0.94 (0.02) & 0.92 (0.03)\\
+\quad Panel-DOSE (oracle nuisance) & 0.90 (0.01) & 0.73 (0.04) & 0.97 (0.02) & 0.93 (0.03) & 0.93 (0.03)\\
+%% END tables/sim_cover
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: 100 replications; Monte Carlo standard errors in parentheses. ``Pointwise'' is the share of grid points at which the interval covers $\theta(z)$; ``Simultaneous'' the share of replications in which the sup-$t$ band covers the whole function; ``Average'', ``High--low'' and ``BLP slope'' refer to the sample-average effect, the tercile contrast and the best linear projection slope. The constant-effect FE-DML estimator targets the variance-weighted average, so its coverage of the other quantities is reported only to show the cost of assuming a constant effect.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/sim_irmse.pdf}
+\caption{IRMSE of the estimated effect function by design (stylised design, 100 replications). DOSE denotes Panel-DOSE and DOSE-u its unpenalised version; green bars are ablations.}\label{fig:simirmse}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/sim_curves.pdf}
+\caption{One simulated sample per design. Dashed black: true $\theta(z)$; blue: Panel-DOSE with 95\% pointwise (dark) and simultaneous (light) bands; red: TWFE with quadratic interaction.}\label{fig:simcurves}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Stylised design, threshold $\theta$: sensitivity to sample size and confounding.}\label{tab:simsens}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccc}
+\toprule
+ & $G=50$ & $G=100$ & $G=100$ & $G=100$ & $G=100$ & $G=200$\\
+ & $\rho=1$ & $\rho=0.25$ & $\rho=0.5$ & $\rho=1$ & $\rho=2$ & $\rho=1$\\
+\midrule
+%% BEGIN tables/sim_sens.tex (generated by code/make_outputs.py)
+\multicolumn{7}{l}{\textit{IRMSE}}\\
+\quad TWFE-interaction & 0.89 & 0.46 & 0.56 & 0.87 & 1.66 & 0.87\\
+\quad TWFE-spline & 0.37 & 0.17 & 0.20 & 0.29 & 0.52 & 0.25\\
+\quad FE-DML + R-learner (tuned) & 0.36 & 0.27 & 0.28 & 0.28 & 0.33 & 0.21\\
+\quad Panel-DOSE (unpenalised) & 0.43 & 0.26 & 0.27 & 0.27 & 0.34 & 0.18\\
+\quad Panel-DOSE & 0.34 & 0.22 & 0.22 & 0.23 & 0.29 & 0.14\\
+\addlinespace\multicolumn{7}{l}{\textit{Pointwise coverage}}\\
+\quad TWFE-interaction & 0.20 (0.01) & 0.25 (0.02) & 0.12 (0.01) & 0.16 (0.00) & 0.16 (0.01) & 0.11 (0.00)\\
+\quad Panel-DOSE (unpenalised) & 0.92 (0.01) & 0.93 (0.01) & 0.92 (0.01) & 0.93 (0.01) & 0.91 (0.02) & 0.91 (0.01)\\
+\quad Panel-DOSE & 0.86 (0.02) & 0.83 (0.02) & 0.82 (0.02) & 0.81 (0.02) & 0.75 (0.02) & 0.90 (0.01)\\
+\addlinespace\multicolumn{7}{l}{\textit{Uniform coverage}}\\
+\quad TWFE-interaction & 0.00 (0.00) & 0.00 (0.00) & 0.00 (0.00) & 0.00 (0.00) & 0.00 (0.00) & 0.00 (0.00)\\
+\quad Panel-DOSE (unpenalised) & 0.82 (0.05) & 0.76 (0.06) & 0.76 (0.06) & 0.83 (0.04) & 0.84 (0.05) & 0.86 (0.05)\\
+\quad Panel-DOSE & 0.62 (0.07) & 0.54 (0.07) & 0.58 (0.07) & 0.58 (0.05) & 0.42 (0.07) & 0.72 (0.06)\\
+\addlinespace\multicolumn{7}{l}{\textit{Coverage of high--low contrast}}\\
+\quad TWFE-interaction & 0.22 (0.06) & 0.22 (0.06) & 0.10 (0.04) & 0.03 (0.02) & 0.04 (0.03) & 0.00 (0.00)\\
+\quad Panel-DOSE (unpenalised) & 0.94 (0.03) & 0.92 (0.04) & 0.96 (0.03) & 0.96 (0.02) & 1.00 (0.00) & 0.94 (0.03)\\
+\quad Panel-DOSE & 0.96 (0.03) & 0.92 (0.04) & 0.88 (0.05) & 0.91 (0.03) & 0.94 (0.03) & 0.92 (0.04)\\
+%% END tables/sim_sens
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: 50 replications per cell except $G=100$, $\rho=1$ (100). Monte Carlo standard errors of coverage rates in parentheses. $\rho$ scales the nonlinear confounding in the outcome equation.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\subsection{Plasmode design}\label{sec:plasmode}
+
+The stylised design has less noise and more residual variation in adoption than the application. The plasmode design \citep{franklin2014plasmode} keeps the actual controls, treatment, moderator (initial log GDP per worker) and panel structure of the baseline sample of Section~\ref{sec:emp} (3,787 observations, 141 countries) and regenerates only the outcome, as $Y^*_{it}=\theta(Z_i)D_{it}+\hat g(F_{it})+w_i\hat e_{it}$. Here $\hat g$ is a boosted-tree fit of observed productivity growth on the nuisance features, $\hat e_{it}$ are the corresponding residuals, and $w_i$ are Rademacher weights drawn per country. The errors thus keep their size, heteroskedasticity and within-country dependence, while any association with $D$ is randomised away. We consider no effect, a linear gradient whose tercile contrast equals $-9.5$ (the size of the gradient that an earlier specification with mechanically endogenous controls produced), and a threshold, with 100, 100 and 50 replications.
+
+Table~\ref{tab:plasmode} shows that in realistic conditions the penalised estimator controls size and has high power. Under no effect, its contrast interval covers the truth in 96\% of replications and the constancy test rejects in 8\%; the unpenalised sup-$t$ test rejects in 22\%, which is why we use the penalised fit for inference. Against the linear gradient, both the contrast and the constancy test reject in 99--100\% of replications, so a gradient of that size would be detected. Pointwise and simultaneous coverage of the penalised bands are 0.91--0.95 and 0.82--0.94. The contrast estimates are biased by about $-1.5$ to $-2.4$ in all designs, which is small relative to their standard errors but means that a moderately negative estimated gradient along initial productivity is expected even without a true gradient. The TWFE-interaction intervals cover the contrast in 75\% of replications under no effect and in 12\% under the threshold.
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Plasmode design built on the empirical panel (moderator: initial log GDP per worker).}\label{tab:plasmode}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & & \multicolumn{4}{c}{High--low tercile contrast} & Constancy & $\lambda=0$ / \\
+\cmidrule(lr){3-6}
+Estimator & IRMSE & Bias & RMSE & Coverage & Rejection & test rejection & $\lambda$ at max\\
+\midrule
+%% BEGIN tables/plasmode.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{No effect}}\\
+\quad TWFE-interaction & -- & 0.86 & 0.93 & 0.75 (0.04) & 0.25 (0.04) & -- & --\\
+\quad TWFE-spline & -- & 1.06 & 1.20 & 0.85 (0.04) & 0.15 (0.04) & -- & --\\
+\quad Panel-DOSE (unpenalised) & 2.54 & -1.79 & 2.40 & 0.91 (0.03) & 0.09 (0.03) & 0.22 (0.04) & --\\
+\quad Panel-DOSE & 1.63 & -1.47 & 2.10 & 0.96 (0.02) & 0.04 (0.02) & 0.08 (0.03) & 0.04/0.41\\
+\addlinespace
+\multicolumn{8}{l}{\textit{Linear gradient}}\\
+\quad TWFE-interaction & -- & 0.86 & 0.93 & 0.75 (0.04) & 1.00 (0.00) & -- & --\\
+\quad TWFE-spline & -- & 1.06 & 1.20 & 0.85 (0.04) & 1.00 (0.00) & -- & --\\
+\quad Panel-DOSE (unpenalised) & 2.30 & -2.66 & 3.13 & 0.88 (0.03) & 1.00 (0.00) & 0.82 (0.04) & --\\
+\quad Panel-DOSE & 1.59 & -2.39 & 2.83 & 0.93 (0.03) & 1.00 (0.00) & 0.99 (0.01) & 0.02/0.45\\
+\addlinespace
+\multicolumn{8}{l}{\textit{Threshold}}\\
+\quad TWFE-interaction & -- & 2.38 & 2.40 & 0.12 (0.05) & 1.00 (0.00) & -- & --\\
+\quad TWFE-spline & -- & 0.88 & 1.02 & 0.94 (0.03) & 1.00 (0.00) & -- & --\\
+\quad Panel-DOSE (unpenalised) & 2.51 & -2.70 & 3.16 & 0.88 (0.05) & 1.00 (0.00) & 1.00 (0.00) & --\\
+\quad Panel-DOSE & 2.20 & -2.26 & 2.89 & 0.94 (0.03) & 1.00 (0.00) & 1.00 (0.00) & 0.12/0.02\\
+%% END tables/plasmode
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: 100 replications for no effect and the linear gradient, 50 for the threshold; Monte Carlo standard errors in parentheses. ``Rejection'': share of replications in which the 95\% interval for the contrast excludes zero (size under no effect, power otherwise). ``Constancy test rejection'': sup-$t$ test at 5\%. The last column gives the shares of replications in which cross-validation selects $\lambda=0$ and the upper end of the grid. The TWFE rows are identical under no effect and the linear gradient because the linear effect lies in the span of the interaction regressors.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+%% ===========================================================================
+\section{Empirical application: internet diffusion and productivity growth, 1996--2025}\label{sec:emp}
+
+\subsection{Data and specification}
+
+The main data set combines the World Bank's World Development Indicators (WDI, July 2026 release, retrieved in September 2026) with the UNDP Human Development Report 2025. The outcome is annual growth of GDP per person employed at constant 2021 PPP prices, $Y_{it}=100\,\Delta\ln(\text{GDP}_{it}/\text{EMP}_{it})$, which WDI compiles from national accounts and the modelled employment estimates of the International Labour Organization (ILO) and which is available up to 2025. The treatment is the share of the population using the internet (ITU) in year $t-1$, measured on $[0,1]$; $\theta$ is therefore the change in growth (in pp) per unit of adoption, and one tenth of it is the change per ten-point rise in the share. In the baseline, the controls are lagged mean years of schooling, the lagged government consumption share, trade openness, population growth, the age-dependency ratio and the urban population share, and initial (pre-sample) log GDP per worker.
+
+The baseline deliberately excludes three groups of variables used in the earlier literature. Lagged productivity levels and growth are excluded because they violate strict exogeneity mechanically (Section~\ref{sec:method}). Mobile and fixed-broadband subscriptions are excluded because they measure the same diffusion process, so that controlling for them turns the estimand into the association of internet use net of co-diffusing technologies. The investment share is excluded because it is a likely channel. We report specifications that add each group back. The sample covers 1996--2025, drops growth observations below the 1st and above the 99th percentile, and keeps countries with at least 15 usable years. We screen the adoption series for implausible values and jumps; the rules flag 39 values, for example a rise in Fiji's mobile subscriptions from 361 to 574 per 100 people in one year (Appendix~\ref{app:data}). The resulting panel contains 3,787 observations on 141 countries. It includes 53 of 86 high-income, 41 of 59 upper-middle-income, 34 of 47 lower-middle-income and 13 of 25 low-income economies. Most excluded low-income economies are fragile or conflict-affected states without productivity data (e.g.\ Afghanistan, Ethiopia, Malawi, Somalia, South Sudan, Yemen). Table~\ref{tab:desc} reports descriptive statistics.
+
+We also use two releases of the Penn World Table \citep{feenstra2015pwt}: version 11.0 \citep{pwt11}, which covers 117 countries over 1996--2023 in our sample (3,087 observations), and version 10.0, which ends in 2019 (113 countries, 2,566 observations). They use PWT labour productivity (real GDP at constant national prices per person engaged) as the outcome, the PWT human-capital index, and the same controls as the WDI baseline plus the labour share; PWT also provides total factor productivity (TFP).
+
+We estimate model~\eqref{eq:model} with three moderators corresponding to the predictions of Section~\ref{sec:pred}: mean years of schooling (absorptive capacity), initial log GDP per worker (distance to the frontier and leapfrogging) and years since the internet-user share first reached 10\% (the J-curve). Using initial rather than lagged productivity as the development moderator avoids the mechanical link with the outcome and sorts countries rather than country-years into terciles. Panel-DOSE uses LightGBM with 400 trees, five country-level folds, five repetitions of the split and cubic B-splines with four interior knots; standard errors are clustered by country.
+
+Figure~\ref{fig:desc} shows the variation that identifies the estimates. Internet use diffused everywhere, but at different times. In the countries with the highest initial productivity, about half of the population was online by the mid-2000s, whereas in the least productive third the share passed one fifth only in the mid-2010s and one half at the end of the sample. Productivity growth was highest in the low and middle groups during the 2000s, fell sharply in 2009 and 2020, and rebounded in 2010 and 2021. Year effects absorb these common shocks, so the estimates rely on differences across countries in the timing of adoption relative to their own productivity paths.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/desc_diffusion.pdf}
+\caption{Internet diffusion and labour-productivity growth by tercile of initial GDP per worker, sample averages by year, 1996--2025.}\label{fig:desc}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Descriptive statistics, 141 countries, 1996--2025.}\label{tab:desc}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Variable & Obs. & Mean & Std.\ dev. & Min & Max\\
+\midrule
+%% BEGIN tables/descriptives.tex (generated by code/make_outputs.py)
+Labour-productivity growth (\%) & 3787 & 1.648 & 3.364 & -10.394 & 12.370\\
+Internet users, share ($t-1$) & 3787 & 0.376 & 0.334 & 0.000 & 1.000\\
+Mobile subscriptions per capita ($t-1$) & 3787 & 0.768 & 0.522 & 0.000 & 2.471\\
+Fixed broadband per capita ($t-1$) & 3787 & 0.094 & 0.129 & 0.000 & 0.487\\
+Mean years of schooling ($t-1$) & 3787 & 8.582 & 3.281 & 0.980 & 14.325\\
+Initial log GDP per worker (pre-sample) & 3787 & 10.193 & 1.087 & 7.145 & 12.560\\
+Investment share ($t-1$) & 3787 & 0.241 & 0.071 & -0.024 & 0.611\\
+Government consumption share ($t-1$) & 3787 & 0.159 & 0.054 & 0.020 & 0.435\\
+Trade openness ($t-1$) & 3787 & 0.854 & 0.532 & 0.156 & 4.426\\
+Population growth, \% ($t-1$) & 3787 & 1.293 & 1.459 & -10.927 & 21.700\\
+Age-dependency ratio ($t-1$) & 3787 & 0.596 & 0.175 & 0.173 & 1.112\\
+Urban population share ($t-1$) & 3787 & 0.607 & 0.213 & 0.109 & 1.000\\
+Years since internet take-off ($t-1$) & 3787 & 4.359 & 10.426 & -25.000 & 29.000\\
+GDP per capita growth (\%) & 3787 & 2.141 & 3.616 & -21.001 & 16.071\\
+%% END tables/descriptives
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Sources: World Development Indicators (World Bank, July 2026 release), including ITU adoption series; UNDP Human Development Report 2025 (mean years of schooling). Years since take-off is negative before the internet-user share first reaches 10\%.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\subsection{The average association}
+
+In the baseline, the headline FE-DML estimate is $-2.23$ (s.e.\ 1.24): a ten-point rise in the internet-user share is followed by 0.22 pp lower productivity growth in the next year, with a 95\% interval of $[-0.46,0.02]$ pp. Two-way clustering by country and year gives a standard error of 1.36. The TWFE estimate with the same controls is $-2.83$ (0.77), and the equally weighted sample-average effect from the sieve is $-1.68$ (1.27); the difference from the headline reflects the weighting by residual adoption variance. Over the average rise in the internet-user share within sample countries (71 points), the headline estimate implies 1.6 pp lower annual growth, and the upper end of the interval a gain of at most 0.1 pp.
+
+The sign is stable across most specifications (Table~\ref{tab:emp} and \ref{app:tables}). The estimate is $-2.60$ (1.10) with random-forest nuisance functions, $-3.49$ (1.64) before COVID-19, $-2.41$ (1.33) without 2020--2021, $-2.55$ (1.30) with GDP-per-capita growth as the outcome, $-2.54$ (1.32) in countries with above-median statistical capacity (World Bank Statistical Performance Indicators, SPI), $-2.28$ (1.24) in PWT 11.0 and $-1.31$ (1.59) in PWT 10.0. Its magnitude depends on the estimand. Adding mobile and broadband subscriptions to the controls reduces it to $-0.88$ (1.24), and the original specification with lagged productivity, lagged growth, investment and the other ICT measures gives $-0.82$ (1.22); a composite ICT index as the treatment gives $-2.90$ (1.50) per unit of the index. Excluding resource exporters reduces it to $-1.42$ (1.27). Weighting the average of $\theta(Z)$ by population, which gives China and India large weights, gives $-0.56$ (1.58) in the schooling specification.
+
+The residual variation that identifies the estimates is limited. After the nuisance step and the within transformation, 23\% of the within-country variance of adoption remains (2.5\% of its total variance), and only 10--12\% in the lowest tercile of schooling or initial productivity, where the median adoption share is 0.05--0.07. Estimates for the least developed economies are therefore imprecise and, as the plasmode shows, prone to moderate bias.
+
+\paragraph{Dynamics}
+Table~\ref{tab:dyn} and Figure~\ref{fig:dyn}(b) report local projections \citep{jorda2005lp} of cumulative productivity growth from $t-1$ to $t+h$ on the internet share in $t-1$, with the baseline controls. The cumulative association becomes more negative with the horizon: $-0.50$ pp per ten points after two years, $-1.09$ pp after four years (significant at 5\%) and $-1.48$ pp after nine years, with widening intervals. Non-overlapping five-year averages \citep{islam1995growth} give $-2.46$ (0.84) with TWFE and $-3.33$ (1.36) with FE-DML. There is thus no sign that a delayed dividend offsets the short-run association within the horizon we observe. The picture is different across countries. In a long difference from 2000 to 2024 with initial-year controls, economies whose internet share rose more grew faster, by 0.24--0.26 pp per year per ten points (OLS 2.56, s.e.\ 0.70; DML 2.42, s.e.\ 1.10; 104 countries). Because this comparison does not remove country effects, it is consistent with faster-growing economies adopting faster rather than with adoption raising growth. An instrumental-variable check that instruments adoption with the 1990 density of fixed telephone lines interacted with the global diffusion curve has a weak first stage ($F=4.2$) and gives an imprecise two-stage least squares (2SLS) estimate of $-4.93$ (4.47); we report it for completeness only.
+
+\paragraph{Comparison with broadband studies}
+Our main estimate concerns internet users, per-worker growth and a global panel, whereas \citet{czernich2011broadband} study broadband, per-capita growth and OECD countries with an instrumental-variable design. With fixed broadband subscriptions as the treatment and GDP-per-capita growth as the outcome in high-income economies, the FE-DML estimate is $-1.59$ (2.69), i.e.\ $-0.16$ pp per ten points with a 95\% interval of $[-0.69,0.37]$, which excludes the 0.9--1.5 pp range reported by \citet{czernich2011broadband}. The designs differ---ours relies on selection on observables and within-country timing---so the comparison shows that the two sets of estimates are not compatible under our assumptions, not that theirs are wrong.
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Dynamic specifications and alternative designs.}\label{tab:dyn}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+\multicolumn{6}{l}{\textit{Panel A. Local projections: cumulative growth from $t-1$ to $t+h$}}\\
+Horizon & Average & (s.e.) & High--low & (s.e.) & Obs.\\
+\midrule
+%% BEGIN tables/emp_lp.tex (generated by code/make_outputs.py)
+$h=0$ & $-2.10^{*}$ & (1.27) & $-2.88$ & (3.33) & 3787\\
+$h=1$ & $-5.05^{**}$ & (2.28) & $0.15$ & (5.45) & 3674\\
+$h=2$ & $-7.89^{**}$ & (3.60) & $6.60$ & (8.77) & 3550\\
+$h=3$ & $-10.88^{**}$ & (4.80) & $13.77$ & (13.67) & 3416\\
+$h=4$ & $-8.96$ & (6.66) & $19.45$ & (16.81) & 3282\\
+$h=5$ & $-9.76$ & (7.71) & $30.22$ & (22.10) & 3152\\
+$h=6$ & $-11.84$ & (10.32) & $21.68$ & (26.94) & 3020\\
+$h=7$ & $-11.02$ & (10.96) & $42.58$ & (29.66) & 2889\\
+$h=8$ & $-14.83$ & (9.83) & $47.16$ & (31.04) & 2753\\
+%% END tables/emp_lp
+\midrule
+\multicolumn{6}{l}{\textit{Panel B. Alternative designs}}\\
+Specification & Estimate & (s.e.) & Obs. & & \\
+\midrule
+%% BEGIN tables/emp_dyn.tex (generated by code/make_outputs.py)
+Five-year averages, TWFE & $-2.46^{***}$ & (0.84) & 789 \\
+Five-year averages, FE-DML & $-3.33^{**}$ & (1.36) & 789 \\
+Long difference 2000--2024, OLS & $2.56^{***}$ & (0.70) & 104 \\
+Long difference 2000--2024, DML & $2.42^{**}$ & (1.10) & 104 \\
+Fixed-line IV (2SLS), first-stage $F=4.2$ & $-4.93$ & (4.47) & 3724 \\
+Broadband, GDP p.c. growth, high income & $-1.59$ & (2.69) & 1525 \\
+Broadband, GDP p.c. growth, all countries & $-6.26^{***}$ & (2.23) & 3787 \\
+%% END tables/emp_dyn
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: coefficients per unit of adoption (0--1); divide by 10 for a ten-point rise. Panel A: FE-DML average and Panel-DOSE tercile contrast by initial log GDP per worker; baseline controls; three repetitions of the split; standard errors clustered by country. Five-year averages: non-overlapping periods 1996--2000 to 2021--2025, treatment and controls at the start of the period. Long difference: annualised growth of GDP per worker 1999--2024 on the change in the internet share, with 2000 controls; OLS with HC1 standard errors and cross-fitted partially linear DML. IV: 2SLS with country and year effects; instrument = 1990 fixed-line density $\times$ leave-one-out global internet share. Broadband rows: FE-DML with fixed broadband subscriptions as treatment and GDP-per-capita growth as outcome. $^{*}$, $^{**}$, $^{***}$: 10\%, 5\%, 1\%.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\subsection{Heterogeneity}
+
+Table~\ref{tab:emp} and Figure~\ref{fig:emp} report the heterogeneity estimates. Table~\ref{tab:diag} in \ref{app:tables} reports the selected penalties, effective degrees of freedom, identifying variation and treatment support by tercile.
+
+\paragraph{Schooling}
+The association is not more positive in better-educated economies. The estimated function declines slightly with schooling (Figure~\ref{fig:emp}a), the high-minus-low tercile contrast is $-4.52$ (s.e.\ 3.41), the BLP slope is $-0.61$ (0.46) per year of schooling, and the constancy test does not reject ($p=0.33$). The absorptive-capacity prediction of a positive gradient is therefore not supported, but the data cannot rule out moderate gradients either. The 95\% interval for the contrast is $[-1.12,0.22]$ pp per ten points, and the minimum detectable contrast (80\% power at 5\%) is about 0.96 pp per ten points. The sign of the contrast varies across robustness checks. Learning-adjusted years of schooling, which account for the quality of schooling \citep{angrist2021learning}, give a similar picture (contrast $-2.81$, s.e.\ 2.56).
+
+\paragraph{Initial productivity}
+Along initial productivity, the WDI estimates show no gradient. The contrast is $-2.88$ (3.33) and the constancy test gives $p=0.60$; the estimate falls within the range that the plasmode shows to arise without a true gradient. Excluding the bottom 5\% of the moderator gives $-1.49$ (2.88), so no single tail drives it. The sign is negative in most WDI robustness checks but never significant at 5\%, and it turns positive with the composite ICT index ($5.80$, s.e.\ 3.13) and before COVID-19 ($2.68$, s.e.\ 4.65). Distance to the US frontier as the moderator, with terciles formed within year, gives $-4.48$ (3.14). A gradient as large as the $-9.5$ produced by the earlier specification would have been detected with probability close to one (Table~\ref{tab:plasmode}). We therefore conclude that the earlier estimate was an artefact of mechanically endogenous controls and an unpenalised fit.
+
+\paragraph{Years since take-off}
+The J-curve prediction receives some qualitative support but no statistical support. In country-years within the first tercile of time since take-off, the association is $-6.27$ (4.68); in the last tercile it is $-1.08$ (1.72). The contrast of $5.26$ (5.52) has the predicted sign, but the constancy test does not reject ($p=0.42$), and the contrast nearly vanishes when mobile and broadband are controlled for ($0.41$, s.e.\ 4.77).
+
+\paragraph{Dose response}
+The marginal association $\hat f'(d)$ is negative and nearly flat over the range of adoption (Figure~\ref{fig:dyn}a), and linearity of $f$ is not rejected ($p=0.34$). Neither network effects nor saturation are visible in aggregate productivity growth.
+
+\paragraph{Multiple testing}
+The three primary constancy tests give $p=0.33$, $0.60$ and $0.42$, with Holm-adjusted $p$-values of 0.99. Without the penalty, the test for initial productivity gives $p=0.04$ (Holm 0.11), but the plasmode shows that the unpenalised test is over-sized in these data (22\% rejections at 5\%).
+
+\begin{table}[!p]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Heterogeneous associations of internet diffusion with labour-productivity growth.}\label{tab:emp}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & Average & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP & Constancy\\
+\cmidrule(lr){3-5}
+Specification & (FE-DML) & Low & Middle & High & low & slope & test $p$\\
+\midrule
+%% BEGIN tables/emp_main.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{Panel A. Moderator: mean years of schooling}}\\
+\quad Baseline & $-2.23^{*}$ & $0.71$ & $-2.31^{*}$ & $-3.06^{*}$ & $-4.52$ & $-0.61$ & 0.33\\
+ & (1.24) & (2.53) & (1.30) & (1.78) & (3.41) & (0.46) & \\
+\quad Original specification & $-0.82$ & $-1.21$ & $-1.23$ & $0.22$ & $1.75$ & $0.16$ & 0.48\\
+ & (1.22) & (2.22) & (1.39) & (1.46) & (2.89) & (0.40) & \\
+\quad Adding mobile and broadband & $-0.88$ & $0.76$ & $-1.49$ & $-0.54$ & $-1.44$ & $-0.26$ & 0.46\\
+ & (1.24) & (2.14) & (1.45) & (1.65) & (2.84) & (0.39) & \\
+\quad Treatment: composite ICT index & $-2.90^{*}$ & $1.49$ & $-1.90$ & $-4.69^{***}$ & $-6.75^{*}$ & $-0.92^{*}$ & 0.24\\
+ & (1.50) & (3.24) & (1.83) & (1.79) & (4.04) & (0.55) & \\
+\quad Random forest nuisance & $-2.60^{**}$ & $-0.18$ & $-2.81^{**}$ & $-2.70^{*}$ & $-1.81$ & $-0.27$ & 0.44\\
+ & (1.10) & (2.18) & (1.35) & (1.51) & (2.76) & (0.37) & \\
+\quad Pre-COVID sample, 1996-2019 & $-3.49^{**}$ & $-1.15$ & $-3.07^{*}$ & $-4.35^{**}$ & $-3.20$ & $-0.43$ & 0.57\\
+ & (1.64) & (3.68) & (1.74) & (2.03) & (4.74) & (0.64) & \\
+\quad Outcome: GDP per capita growth & $-2.55^{*}$ & $-0.91$ & $-2.54^{*}$ & $-2.08$ & $-1.12$ & $-0.15$ & 0.27\\
+ & (1.30) & (2.49) & (1.37) & (1.90) & (3.81) & (0.52) & \\
+\quad Moderator: learning-adjusted schooling & $-2.32^{*}$ & $-0.46$ & $-2.13^{*}$ & $-3.30^{***}$ & $-2.81$ & $-0.49$ & 0.20\\
+ & (1.24) & (2.25) & (1.27) & (1.27) & (2.56) & (0.45) & \\
+\quad PWT 11.0, 1996-2023 & $-2.28^{*}$ & $-8.04^{*}$ & $-1.33$ & $-1.16$ & $6.34$ & $6.79$ & 0.13\\
+ & (1.24) & (4.72) & (1.81) & (1.21) & (4.89) & (4.13) & \\
+\quad PWT 10.0, 1996-2019 & $-1.31$ & $-5.64$ & $-1.13$ & $-1.87^{*}$ & $3.63$ & $5.49$ & 0.08\\
+ & (1.59) & (4.95) & (1.91) & (1.05) & (5.22) & (3.86) & \\
+\addlinespace
+\multicolumn{8}{l}{\textit{Panel B. Moderator: initial log GDP per worker}}\\
+\quad Baseline & $-2.23^{*}$ & $-0.54$ & $-2.32^{*}$ & $-1.79$ & $-2.88$ & $-1.19$ & 0.60\\
+ & (1.24) & (2.85) & (1.38) & (1.45) & (3.33) & (1.57) & \\
+\quad Original specification & $-0.87$ & $0.51$ & $-0.78$ & $-2.16$ & $-2.21$ & $-0.91$ & 0.52\\
+ & (1.28) & (2.20) & (1.28) & (1.53) & (2.97) & (1.22) & \\
+\quad Adding mobile and broadband & $-0.88$ & $1.28$ & $-0.77$ & $-2.36$ & $-2.89$ & $-1.19$ & 0.42\\
+ & (1.24) & (2.39) & (1.27) & (1.51) & (2.99) & (1.23) & \\
+\quad Treatment: composite ICT index & $-2.90^{*}$ & $-5.69^{**}$ & $-3.73^{**}$ & $-0.07$ & $5.80^{*}$ & $2.18^{*}$ & 0.13\\
+ & (1.50) & (2.70) & (1.63) & (2.12) & (3.13) & (1.18) & \\
+\quad Random forest nuisance & $-2.60^{**}$ & $1.58$ & $-5.89^{***}$ & $-1.91$ & $-3.65$ & $-2.12^{**}$ & 0.06\\
+ & (1.10) & (1.85) & (2.00) & (1.35) & (2.27) & (0.97) & \\
+\quad Pre-COVID sample, 1996-2019 & $-3.49^{**}$ & $-5.63$ & $-3.94^{*}$ & $-3.02^{**}$ & $2.68$ & $1.11$ & 0.66\\
+ & (1.64) & (4.41) & (2.08) & (1.52) & (4.65) & (1.92) & \\
+\quad Moderator: distance to US frontier & $-1.16$ & $1.91$ & $-1.27$ & $-2.49^{*}$ & $-4.48$ & $-2.08$ & 0.18\\
+ & (1.14) & (2.66) & (1.28) & (1.30) & (3.14) & (1.31) & \\
+\quad WDI data, PWT 11.0 countries, 1996-2023 & $-2.34^{*}$ & $-2.15$ & $-2.27^{*}$ & $-3.22^{*}$ & $-0.02$ & $-0.01$ & 0.19\\
+ & (1.27) & (2.70) & (1.31) & (1.85) & (3.61) & (1.64) & \\
+\quad PWT 11.0, 1996-2023 & $-2.28^{*}$ & $-7.19^{**}$ & $-1.37$ & $-0.39$ & $6.81^{**}$ & $3.25^{**}$ & 0.06\\
+ & (1.24) & (2.86) & (1.33) & (1.31) & (3.30) & (1.49) & \\
+\quad PWT 10.0, 1996-2019 & $-1.31$ & $-9.72^{***}$ & $-2.57^{**}$ & $2.21$ & $11.84^{***}$ & $5.18^{***}$ & 0.01\\
+ & (1.59) & (3.18) & (1.29) & (1.82) & (3.92) & (1.72) & \\
+\addlinespace
+\multicolumn{8}{l}{\textit{Panel C. Moderator: years since internet take-off (share $\geq$ 10\%)}}\\
+\quad Baseline & $-1.84$ & $-6.27$ & $-2.56$ & $-1.08$ & $5.26$ & $0.21$ & 0.42\\
+ & (1.33) & (4.68) & (1.60) & (1.72) & (5.52) & (0.25) & \\
+\quad Random forest nuisance & $-1.14$ & $-6.04$ & $-1.89$ & $0.13$ & $5.26$ & $0.23$ & 0.36\\
+ & (1.33) & (3.89) & (1.58) & (1.71) & (4.58) & (0.20) & \\
+\quad Pre-COVID sample, 1996-2019 & $-2.10$ & $-7.67$ & $-5.03^{**}$ & $-1.14$ & $6.99$ & $0.50$ & 0.40\\
+ & (1.69) & (14.45) & (2.45) & (2.16) & (14.56) & (0.93) & \\
+\quad Adding mobile and broadband & $-0.73$ & $-0.61$ & $-1.85$ & $-0.20$ & $0.41$ & $0.02$ & 0.36\\
+ & (1.40) & (4.36) & (1.76) & (1.67) & (4.77) & (0.21) & \\
+%% END tables/emp_main
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: Panel-DOSE estimates; standard errors clustered by country in parentheses. Coefficients are per unit of adoption (0--1); divide by 10 for a ten-point rise. The dependent variable is annual labour-productivity growth (\%) unless stated otherwise. Baseline: WDI panel (141 countries, 1996--2025) with the controls listed in Section~\ref{sec:emp}. ``Original specification'' adds lagged log productivity, lagged growth, the investment share and mobile and broadband subscriptions. PWT rows use the Penn World Table panels, with the PWT human-capital index (Panel A) and initial log PWT labour productivity (Panel B) as moderators. The BLP slope is per unit of the moderator (years of schooling, log points, years). ``Constancy test $p$'': sup-$t$ test that $\theta$ is constant. $^{*}$, $^{**}$, $^{***}$: 10\%, 5\%, 1\%.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/emp_main.pdf}
+\caption{Estimated association of lagged internet diffusion with labour-productivity growth, WDI panel 1996--2025: (a) by mean years of schooling, with the TWFE linear-interaction estimate (dashed); (b) by initial log GDP per worker; (c) by years since the internet-user share first reached 10\%. Dark bands: 95\% pointwise; light bands: 95\% simultaneous. Grids span the 1st to 99th percentiles; tick marks show the distribution of the moderator.}\label{fig:emp}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/emp_dyn.pdf}
+\caption{(a) Marginal association $\hat f'(d)$ in the dose-response model (20th to 95th percentiles of adoption), with 95\% pointwise and simultaneous bands. (b) Local projections: cumulative change in productivity growth from $t-1$ to $t+h$ associated with a ten-point higher internet share in $t-1$, with 95\% intervals.}\label{fig:dyn}
+\end{figure}
+
+\subsection{Data sources and vintages}
+
+The PWT panels tell a different story about heterogeneity (Panel B of Table~\ref{tab:emp} and Figure~\ref{fig:emprob}b). With the same specification, the contrast along initial productivity is $11.84$ (3.92) in PWT 10.0, $4.64$ (3.64) in PWT 11.0 for the same years 1996--2019 and $6.81$ (3.30) in PWT 11.0 for 1996--2023, against $-0.02$ (3.61) in the WDI data for the countries and years of the PWT 11.0 panel. In PWT, the least productive economies show a strongly negative association, as in a J-curve along the development dimension; in WDI they do not.
+
+Table~\ref{tab:vintage} decomposes the difference between the two PWT releases on the 2,565 country-years they have in common. With all variables from PWT 10.0, the contrast is 11.92 (4.40); with all from PWT 11.0 it is 4.20 (4.01). The difference of 7.72 has a standard error of 3.03, computed from the country-level influence functions of the two estimates, and is significant at the 5\% level. Replacing only the outcome by its PWT 11.0 version reduces the contrast to 6.16, whereas replacing only the moderator (9.92) or only the controls (9.31) changes it less. Only 5.4\% of the country-years (six countries) change tercile between the releases. The revision of measured growth rates, not the reclassification of countries, therefore drives most of the change. No single country dominates the low-tercile estimate: the largest leave-one-country-out change is 1.4 (Lesotho), against a standard error of 3.2.
+
+\begin{table}[!t]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Decomposition of the difference between PWT 10.0 and PWT 11.0 (common sample).}\label{tab:vintage}
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+Variables taken from & Low tercile & (s.e.) & High $-$ low & (s.e.)\\
+\midrule
+%% BEGIN tables/emp_vintage.tex (generated by code/make_outputs.py)
+PWT 10.0 (all components) & $-10.44^{***}$ & (3.22) & $11.92^{***}$ & (4.40)\\
+Outcome from PWT 11.0 & $-5.23^{*}$ & (3.16) & $6.16^{*}$ & (3.61)\\
+Moderator from PWT 11.0 & $-9.71^{***}$ & (2.92) & $9.92^{**}$ & (4.42)\\
+Controls from PWT 11.0 & $-7.57^{**}$ & (3.83) & $9.31^{*}$ & (5.02)\\
+PWT 11.0 (all components) & $-3.74$ & (3.72) & $4.20$ & (4.01)\\
+%% END tables/emp_vintage
+\midrule
+\multicolumn{5}{l}{Difference, PWT 10.0 $-$ PWT 11.0: 7.72 (s.e.\ 3.03); 2,565 country-years, 113 countries}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: Panel-DOSE with initial log labour productivity as moderator on the country-years present in both releases. Each row takes the outcome, the moderator and the controls from the release indicated; the treatment is the same ITU series in all rows. The standard error of the difference uses the country-level influence functions of the two estimates. $^{*}$, $^{**}$, $^{***}$: 10\%, 5\%, 1\%.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/emp_robust.pdf}
+\caption{(a) $\hat\theta(z)$ by schooling across WDI robustness checks; the shaded band is the 95\% pointwise band of the baseline. (b) $\hat\theta(z)$ by initial log productivity in the WDI baseline, PWT 11.0 (1996--2023) and PWT 10.0 (1996--2019), with 95\% pointwise bands.}\label{fig:emprob}
+\end{figure}
+
+%% ===========================================================================
+\clearpage
+\section{Discussion}\label{sec:disc}
+
+\subsection{Interpretation}
+
+Three features of the results deserve emphasis. First, the absence of a short-run within-country dividend is robust, but its size is not. The association is negative in almost every specification and horizon, and positive gains larger than about 0.02 pp per year per ten points are excluded under our assumptions. How negative it is depends on what is held fixed: controlling for mobile and broadband subscriptions, which diffuse together with internet use, shrinks it by about 60\%. A negative within-country association is consistent with the J-curve argument that intangible investment and reorganisation depress measured productivity during diffusion \citep{brynjolfsson2021jcurve}, with the finding that ICT returns are concentrated in firms with complementary capabilities \citep{gal2019digitalisation,nicoletti2020diffusion}, and with compositional effects in which digital platforms expand low-productivity service employment. It is also consistent with a positive cross-country association in long differences, which reflects which economies adopted, not what adoption did within them.
+
+Second, none of the heterogeneity predictions is supported robustly. The schooling gradient, if anything, has the opposite sign from the absorptive-capacity prediction. This would be compatible with the micro evidence that broadband complements skilled and substitutes unskilled labour \citep{akerman2015broadband} only if aggregate gains among skilled workers were offset elsewhere; with our precision, however, we cannot distinguish a flat function from moderate gradients of either sign. The J-curve pattern along time since take-off has the predicted shape but is not statistically distinguishable from a constant.
+
+Third, conclusions about where the digital dividend arrives are sensitive to the data. The positive gradient along initial productivity appears in PWT and not in WDI, and within PWT it shrinks by about two thirds between releases for identical country-years, mostly because revised growth rates differ. This finding extends the evidence of \citet{johnson2013newer} and \citet{ponomareva2010pwt} to heterogeneous effects of internet diffusion. It is not driven by the flexible estimator: it concerns which data are used, and the estimator only makes the uncertainty visible. In our application, a TWFE regression with a linear interaction or with spline controls finds no gradient significant at 5\% either, but the simulations show that linear-interaction intervals are unreliable when the control function is nonlinear.
+
+\subsection{Policy implications}
+
+The evidence cautions against justifying connectivity programmes by expected short-run gains in aggregate productivity. In the economies and period we study, faster internet diffusion has not been followed by faster measured productivity growth within countries over horizons of up to nine years. This does not imply that such programmes are undesirable. Connectivity has consumer-surplus, inclusion and service-delivery benefits that productivity statistics do not capture \citep{worldbank2016wdr,goldfarb2019digital,hjort2025connectivity}, and averages across countries can hide large gains for specific groups within them. It does suggest three things. Productivity gains, if they arise, depend on complementary investment in firm capabilities, management and skills and on the intensity and quality of use, not on access alone. Divides within countries in the affordability and quality of access deserve more attention than aggregate penetration rates. And cross-country benchmarks that claim to identify the stage of development at which digital investment pays off should be treated with caution, because such heterogeneity estimates change with data releases. Policy-relevant causal statements would require designs with credible exogenous variation, such as the staggered arrival of infrastructure used by \citet{hjort2019internet}.
+
+\subsection{Limitations}
+
+The estimates are conditional associations. Strict exogeneity rules out feedback from productivity shocks to future adoption; lagging the treatment by one or two years mitigates but does not eliminate reverse causality, and the instrument we could construct from historical fixed-line density is weak. The baseline avoids the mechanical violation of strict exogeneity that lagged productivity controls create, but other controls, such as urbanisation, may respond to past productivity. Measurement error matters in both directions: employment in low-income economies is largely modelled by the ILO, ITU internet shares for these economies are often estimated, and classical error in adoption attenuates $\theta$. Results are similar with GDP-per-capita growth as the outcome, in countries with above-median statistical capacity, and after screening the adoption series, but they cannot rule out non-classical errors correlated with development. The last observations rest on provisional national accounts and schooling in 2024 is extrapolated, although dropping 2025 leaves the results unchanged. Internet penetration measures access, not intensity or quality of use. Coverage of low-income and conflict-affected economies is incomplete. Finally, the asymptotic theory covers the fixed-$K$ unpenalised sieve, and our inference for the penalised estimator is justified by simulation rather than by a theorem (Remark~\ref{rem:scope}).
+
+%% ===========================================================================
+\section{Conclusion}\label{sec:concl}
+
+Over three decades of internet diffusion in 141 economies, we find no evidence of a short-run productivity dividend within countries: higher internet use is followed by slightly lower measured productivity growth, and the cumulative association remains negative over longer horizons. We find no robust variation of the association with schooling, initial productivity or time since take-off, although the pattern along time since take-off has the shape a productivity J-curve would predict. Heterogeneity along the development dimension appears in the Penn World Table and not in World Bank data, and it changes substantially between PWT releases for identical country-years, mainly because revised growth rates differ.
+
+Methodologically, Panel-DOSE combines orthogonal series estimation, Mundlak features, country-level cross-fitting, a within transformation and an O'Sullivan penalty. It is most useful when confounding is strongly nonlinear; when it is mild, TWFE with spline controls does as well. Most of its advantage comes from the Mundlak features, and linear interaction models give unreliable intervals when the control function is misspecified. The code, which also reports identifying variation, influence-based comparisons of estimates and shape tests, is released as a Python package.
+
+Future work could combine the estimator with instruments or staggered infrastructure roll-outs to move from associations to effects, use firm- or region-level measures of the intensity of digital use, and examine the moderating roles of institutions, competition and data governance.
+
+\backmatter
+
+\section*{Declarations}
+
+\bmhead{Data and code availability}
+The data are publicly available from the World Bank's World Development Indicators (July 2026 release), the UNDP Human Development Report 2025 and the Penn World Table (versions 11.0 and 10.0). The WDI snapshot used here was retrieved through the World Bank API in September 2026 and is archived with SHA-256 checksums in the replication package, which reads the archived snapshot by default. The package contains the Python implementation of Panel-DOSE and the scripts that download the data and reproduce all tables and figures; a persistent identifier will be assigned to the archived package on acceptance.
+
+\bmhead{Competing interests}
+The author declares no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\bmhead{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+\bmhead{Author contribution}
+\textbf{Quang-Vinh Dang:} Conceptualization, Methodology, Software, Formal analysis, Data curation, Writing -- original draft, Writing -- review \& editing.
+
+\begin{appendices}
+\section{Proofs}\label{app:proofs}
+
+Throughout, the year effect is a function of the time index $t$, which is an element of $F_{it}$, so $\lambda_t$ is absorbed by $\ell$. The two-way operator $\M$ is the orthogonal projection onto the complement of the space spanned by country and year indicators; it is symmetric and idempotent, and $\M c=0$ for any vector with elements $c_{it}=c_i+c_t$. For country $i$, collect its $T_i$ observations into $Y_i$, $\Phi_i$ ($T_i\times K$) and $F_i$, and write $V_i=\Phi_i-m_0(F_i)$ and $e_i=Y_i-\ell_0(F_i)-V_i\beta_0$. Under Assumptions~\ref{as:exo}--\ref{as:cre} and $r_K=0$, $e_{it}=a_i+\varepsilon_{it}$. Let $Q_i=I_{T_i}-T_i^{-1}\iota\iota'$ be the country-demeaning matrix. The following lemma allows us to replace $\M$ by $Q_i$ in the asymptotic arguments.
+
+\begin{lemma}[Year demeaning]\label{lem:year}
+Let $\M=Q-P$, where $Q$ is block-diagonal with blocks $Q_i$ and $P$ removes the year means of country-demeaned variables (exactly so for balanced panels). For any array $W$ whose country-demeaned elements have mean zero and bounded second moments, the year means $\bar w_t$ of the country-demeaned elements satisfy $\max_t|\bar w_t|=O_p(G^{-1/2})$ for fixed $\bar T$. Consequently, $G^{-1/2}\sum_i(\M\tilde\Phi^0)_i'(\M e)_i=G^{-1/2}\sum_iV_i'Q_ie_i+O_p(G^{-1/2})$.
+\end{lemma}
+
+\begin{proof}
+With a finite number of years and independent countries, each year mean is an average of $G_t\propto G$ independent mean-zero terms, so it is $O_p(G^{-1/2})$ by Chebyshev's inequality, and the maximum over at most $\bar T$ years inherits the rate. Expanding $\M=Q-P$ in the score gives cross terms of the form $G^{-1/2}\sum_t G_t\,\bar v_t\bar e_t$, which are $O_p(G^{-1/2}\cdot G\cdot G^{-1/2}\cdot G^{-1/2})=O_p(G^{-1/2})$. For unbalanced panels the alternating-projection operator differs from $Q-P$ by terms of the same order.
+\end{proof}
+
+\paragraph{Proof of Proposition~\ref{prop:orth}}
+(i) For directions $\delta_\ell(F)$ and $\delta_m(F)$, and using Lemma~\ref{lem:year},
+\[
+\psi(\beta_0;\ell_0+r\delta_\ell,m_0+r\delta_m)=\E\big[(V_i-r\delta_{m,i})'Q_i\big(e_i-r\delta_{\ell,i}+r\delta_{m,i}\beta_0\big)\big].
+\]
+Differentiating at $r=0$ gives $-\E[\delta_{m,i}'Q_ie_i]+\E[V_i'Q_i(\delta_{m,i}\beta_0-\delta_{\ell,i})]$. In the first term, $Q_ie_i=Q_i\varepsilon_i$ because $a_i$ is constant within country, and $\E[\varepsilon_{it}\mid F_{i1},\dots,F_{iT_i}]=0$ by Assumption~\ref{as:exo}, because $F_{is}$ is a function of $(D_i,X_i)$; the term is zero. In the second term, $Q_iw_i$ is a function of $(F_{i1},\dots,F_{iT_i})$ for $w_i=\delta_{m,i}\beta_0-\delta_{\ell,i}$, and, when $Z_{it}$ is in $F_{it}$, $\E[V_{it}\mid F_{i1},\dots,F_{iT_i}]=b(Z_{it})\{\E[D_{it}\mid F_{i1},\dots,F_{iT_i}]-\mu(F_{it})\}=0$ by Assumption~\ref{as:suff} (in the dose-response model the same condition is imposed on $\Phi$); the term is zero.
+
+(ii) $\M(Y-\ell-c)=\M(Y-\ell)-\M c=\M(Y-\ell)$ whenever $c_{it}=c_i+c_t$, because $\M$ annihilates the span of the country and year indicators; the same holds for each column of $m$. If instead $\hat\mu=\mu+c_i$, the regressors become $\M\{b(Z)(D-\mu)\}-\M\{b(Z_{it})c_i\}$, and $\M\{b(Z_{it})c_i\}=c_i\,\M b(Z_{it})$, which vanishes only if $b(Z_{it})$ is constant within country (in particular if $K=1$). \qed
+
+\paragraph{Proof of Proposition~\ref{prop:struct}}
+If $Z_{it}$ is a coordinate of $F_{it}$, then $b_k(Z_{it})$ is $F_{it}$-measurable and $\E[D_{it}b_k(Z_{it})\mid F_{it}]=b_k(Z_{it})\E[D_{it}\mid F_{it}]$. Consequently $\Phi_{it}-m(F_{it})=b(Z_{it})\{D_{it}-\mu(F_{it})\}$. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:an}}
+Write $\tilde\Phi=\M(\Phi-\hat m)$, $\tilde Y=\M(Y-\hat\ell)$, and let $\tilde\Phi^0$ be the same object at the true nuisance functions. From~\eqref{eq:pls},
+\[
+\sqrt G(\hat\beta_\lambda-\beta_K)=\Big(\tfrac1G\tilde\Phi'\tilde\Phi+\lambda\tfrac\kappa G\Omega\Big)^{-1}\Big\{\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)-\sqrt G\lambda\tfrac\kappa G\Omega\beta_K\Big\}.
+\]
+The last term vanishes because $\kappa/G=O_p(1)$ and $\lambda_G\sqrt G\to0$. Let $\Delta_m=\hat m-m_0$ and $\Delta_\ell=\hat\ell-\ell_0$ on the evaluation fold. By Lemma~\ref{lem:year},
+\[
+\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)=\tfrac1{\sqrt G}\sum_iV_i'Q_ie_i+R_1+R_2+R_3+O_p(G^{-1/2}),
+\]
+where $R_1=-G^{-1/2}\sum_i\Delta_{m,i}'Q_ie_i$, $R_2=G^{-1/2}\sum_iV_i'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i})$ and $R_3=-G^{-1/2}\sum_i\Delta_{m,i}'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i})$. Because the nuisance functions are estimated on countries outside the evaluation fold, conditionally on the training sample the summands of $R_1$ and $R_2$ are independent across countries with mean zero (by Assumptions~\ref{as:exo} and~\ref{as:suff}, as in the proof of Proposition~\ref{prop:orth}), and their conditional variances are bounded by a constant times $\|\Delta_m\|_2^2$ and $\|\Delta_m\|_2^2+\|Q\Delta_\ell\|_2^2$; hence $R_1,R_2=o_p(1)$. By the Cauchy--Schwarz inequality, $\|R_3\|\le C\sqrt G\,\|\Delta_m\|_2(\|\Delta_m\|_2+\|Q\Delta_\ell\|_2)$, which is $o_p(1)$ under Assumption~\ref{as:reg}(b); by Proposition~\ref{prop:struct}, $\|\Delta_m\|_2\le C\|\hat\mu-\mu\|_2$. Only the country-demeaned error $Q\Delta_\ell$ appears because $Q$ annihilates country constants. Similarly $G^{-1}\tilde\Phi'\tilde\Phi\xrightarrow{p}J$. The Lindeberg--Feller central limit theorem for independent clusters gives $G^{-1/2}\sum_iV_i'Q_ie_i=G^{-1/2}\sum_is_i\xrightarrow{d}N(0,\Omega_s)$. Consistency of $G\hat V$ follows from standard arguments for cluster-robust variance estimators \citep{cameron2015cluster}. For a fixed number $S$ of splits, each $w'\hat\beta_s$ has the same linear representation, so the median does too and the variance adjustment is asymptotically negligible \citep{chernozhukov2018dml}. \qed
+
+\section{Data and implementation details}\label{app:data}
+
+\paragraph{Variables}
+\emph{Main panel (1996--2025).} From the World Development Indicators (July 2026 release, retrieved through the World Bank API in September 2026): GDP per person employed at constant 2021 PPP dollars (\texttt{SL.GDP.PCAP.EM.KD}); individuals using the internet (\texttt{IT.NET.USER.ZS}); mobile cellular (\texttt{IT.CEL.SETS.P2}) and fixed broadband (\texttt{IT.NET.BBND.P2}) subscriptions per 100 people; gross capital formation (\texttt{NE.GDI.TOTL.ZS}), government final consumption (\texttt{NE.CON.GOVT.ZS}), exports (\texttt{NE.EXP.GNFS.ZS}) and imports (\texttt{NE.IMP.GNFS.ZS}) as percentages of GDP; population growth (\texttt{SP.POP.GROW}) and total population (\texttt{SP.POP.TOTL}); the urban population share (\texttt{SP.URB.TOTL.IN.ZS}); the age-dependency ratio (\texttt{SP.POP.DPND}); GDP per capita at constant 2015 dollars (\texttt{NY.GDP.PCAP.KD}); the Statistical Performance Indicators overall score (\texttt{IQ.SPI.OVRL}, country mean over 2016--2024); fuel and ores-and-metals exports as percentages of merchandise exports (\texttt{TX.VAL.FUEL.ZS.UN}, \texttt{TX.VAL.MMTL.ZS.UN}; resource exporters are countries whose combined share averages at least 50\% over 1996--2025); fixed telephone subscriptions per 100 people in 1990 (\texttt{IT.MLT.MAIN.P2}); and learning-adjusted years of schooling (\texttt{HD.HCI.LAYS}, country mean). Mean years of schooling is taken from the UNDP Human Development Report 2025 composite-indices time series (1990--2023); the 2024 value is the 2023 value plus the country's 2019--2023 linear trend. Initial log GDP per worker is the first available value in 1991--1995 (for one country, the first available later value). Percentages are divided by 100. Broadband subscriptions are set to zero in the years before a country's first reported value. Regional and income aggregates are excluded.
+
+\emph{Screening of adoption series.} Values are set to missing when the internet share is outside $[0,100]$ or changes by more than 25 points in a year, when mobile subscriptions exceed 250 per 100 people or change by more than 100 per 100, or when broadband subscriptions exceed 60 per 100 or change by more than 20 per 100. The rules flag 39 values (8 internet, 18 mobile, 13 broadband) and remove 19 observations from the estimation sample. The list is part of the replication package, and the unscreened sample (3,806 observations) gives a headline estimate of $-3.01$ (1.15).
+
+\emph{PWT panels.} From the Penn World Table 11.0 (1996--2023) and 10.0 (1996--2019), with identical definitions: labour productivity is real GDP at constant national prices (\texttt{rgdpna}) divided by persons engaged (\texttt{emp}); TFP growth is the log change of \texttt{rtfpna}; the human capital index is \texttt{hc}; the government share is \texttt{csh\_g}; openness is \texttt{csh\_x}$-$\texttt{csh\_m}, which equals exports plus imports as shares of GDP because PWT records \texttt{csh\_m} with a negative sign; the labour share is \texttt{labsh}. The adoption series are the ITU data distributed by Our World in Data. All controls and the treatment enter with a one-year lag in all panels.
+
+\paragraph{Invariance check}
+We add country-specific constants to the cross-fitted residuals of the baseline and re-solve the final stage with the penalty held fixed. Constants added to the outcome residuals (standard deviation 1) leave every estimate unchanged up to numerical precision, as Proposition~\ref{prop:orth}(ii) states. Constants added to the treatment residuals (standard deviation 0.05, against a residual standard deviation of 0.066) leave the constant-effect estimate unchanged. They also leave the Panel B estimates unchanged, because initial productivity is time-invariant, so that $b(Z_{it})$ is constant within country. For the time-varying schooling moderator, however, they move the tercile contrast from $-4.52$ to $-3.75$, about a fifth of its standard error.
+
+\paragraph{Countries}
+Table~\ref{tab:countries} lists the 141 countries of the main panel by tercile of initial GDP per worker.
+
+\begin{table}[!ht]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Countries in the main estimation sample, by tercile of initial GDP per worker.}\label{tab:countries}
+\footnotesize
+\begin{tabular}{lp{0.82\textwidth}}
+\toprule
+Group & Countries\\
+\midrule
+%% BEGIN tables/countries.tex (generated by code/make_outputs.py)
+Low & Albania; Armenia; Bangladesh; Benin; Bolivia; Bosnia and Herzegovina; Burkina Faso; Cabo Verde; Cambodia; Cameroon; Central African Republic; Chad; China; Comoros; Congo, Dem. Rep.; El Salvador; Gambia, The; Ghana; Guinea; Guinea-Bissau; Haiti; Honduras; India; Indonesia; Kenya; Kyrgyz Republic; Lao PDR; Lesotho; Madagascar; Mali; Morocco; Mozambique; Nepal; Nicaragua; Niger; Pakistan; Philippines; Rwanda; Senegal; Sierra Leone; Solomon Islands; Sri Lanka; Tajikistan; Tanzania; Thailand; Togo; Tonga; Uganda; Uzbekistan; Viet Nam; Zambia\\
+Middle & Angola; Azerbaijan; Belarus; Belize; Botswana; Brazil; Bulgaria; Chile; Colombia; Congo, Rep.; Costa Rica; Croatia; Cyprus; Dominican Republic; Ecuador; Egypt, Arab Rep.; Estonia; Fiji; Georgia; Guatemala; Iran, Islamic Rep.; Kazakhstan; Korea, Rep.; Latvia; Lithuania; Malaysia; Mauritania; Mauritius; Moldova; Mongolia; Namibia; North Macedonia; Panama; Paraguay; Peru; Poland; Romania; Sao Tome and Principe; Serbia; Slovak Republic; South Africa; Tunisia; Turkiye; Ukraine; Uruguay; Zimbabwe\\
+High & Algeria; Argentina; Australia; Austria; Bahamas, The; Bahrain; Belgium; Brunei Darussalam; Canada; Czechia; Denmark; Finland; France; Gabon; Germany; Greece; Hong Kong SAR, China; Hungary; Iceland; Ireland; Israel; Italy; Japan; Kuwait; Luxembourg; Malta; Mexico; Montenegro; Netherlands; New Zealand; Norway; Oman; Portugal; Qatar; Russian Federation; Saudi Arabia; Singapore; Slovenia; Spain; Sweden; Switzerland; United Arab Emirates; United Kingdom; United States\\
+%% END tables/countries
+\bottomrule
+\end{tabular}
+\end{threeparttable}}
+\end{table}
+
+\paragraph{Implementation}
+The nuisance learners are LightGBM gradient-boosted trees \citep{ke2017lightgbm} with 15 leaves, a minimum of 20 observations per leaf (10 in the simulations), row and column subsampling of 80\% and a learning rate of 0.03; the random-forest check uses 400 trees \citep{breiman2001rf} with a minimum leaf size of 5 and half of the features at each split. The feature set contains the lagged controls, their country means (except for time-invariant variables), the country means of the treatment and the moderator, and the calendar year. Knots are placed at equally spaced quantiles of the moderator between its 0.5th and 99.5th percentiles, and values outside this range are assigned to the boundary. Simultaneous bands and sup-$t$ tests use 20,000 Gaussian draws. A full fit on the empirical sample (two nuisance functions, five folds, five repetitions) takes about 30 seconds on one CPU core, and re-estimating the final stage with another sieve takes a fraction of a second.
+
+\section{Additional results}\label{app:tables}
+
+\begin{table}[!ht]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Penalty, identifying variation and treatment support.}\label{tab:diag}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & & & Residual & Residual share & Median $D$ & Within-country & Countries\\
+Specification & $\hat\lambda$ & edf & share & by tercile & by tercile & s.d.\ of $D$ & by tercile\\
+\midrule
+%% BEGIN tables/emp_diag.tex (generated by code/make_outputs.py)
+A: Baseline & 1e+04 & 2.0 & 0.23 & 0.10 / 0.36 / 0.32 & 0.05 / 0.30 / 0.75 & 0.10 / 0.16 / 0.18 & 74 / 92 / 70\\
+A: Original specification & 31.6 & 2.5 & 0.23 & 0.14 / 0.34 / 0.28 & 0.05 / 0.30 / 0.75 & 0.10 / 0.16 / 0.18 & 74 / 92 / 70\\
+B: Baseline & 31.6 & 2.4 & 0.23 & 0.12 / 0.40 / 0.26 & 0.07 / 0.34 / 0.69 & 0.17 / 0.27 / 0.31 & 51 / 46 / 44\\
+B: Original specification & 1e+04 & 2.0 & 0.23 & 0.15 / 0.34 / 0.26 & 0.07 / 0.34 / 0.69 & 0.17 / 0.27 / 0.31 & 51 / 46 / 44\\
+C: Baseline & 5.62 & 2.6 & 0.20 & 0.06 / 0.43 / 0.39 & 0.02 / 0.32 / 0.80 & 0.04 / 0.12 / 0.09 & 137 / 140 / 117\\
+%% END tables/emp_diag
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: $\hat\lambda$: cross-validated penalty (median over splits; $10^4$ is the upper end of the grid, an effectively linear fit); edf: effective degrees of freedom. ``Residual share'': variance of the two-way demeaned residual $D-\hat\mu$ relative to the variance of two-way demeaned $D$, overall and by tercile (low/middle/high) of the moderator. Countries by tercile can overlap for time-varying moderators.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\adjustbox{max width=\linewidth}{%
+\begin{threeparttable}
+\caption{Further robustness checks.}\label{tab:empapp}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & Average & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP & Constancy\\
+\cmidrule(lr){3-5}
+Specification & (FE-DML) & Low & Middle & High & low & slope & test $p$\\
+\midrule
+%% BEGIN tables/emp_appendix.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{Panel A. Moderator: mean years of schooling}}\\
+\quad Adding the investment share & $-2.41^{*}$ & $0.05$ & $-2.22^{*}$ & $-3.56^{*}$ & $-3.74$ & $-0.51$ & 0.54\\
+ & (1.23) & (2.45) & (1.24) & (1.83) & (3.43) & (0.47) & \\
+\quad Unpenalised sieve & $-2.10^{*}$ & $2.63$ & $-3.46^{*}$ & $-1.45$ & $-4.13$ & $-0.56$ & 0.39\\
+ & (1.27) & (3.26) & (1.81) & (1.51) & (3.75) & (0.49) & \\
+\quad Three interior knots & $-2.10^{*}$ & $1.52$ & $-2.28$ & $-3.00^{*}$ & $-4.52$ & $-0.61$ & 0.25\\
+ & (1.27) & (2.72) & (1.49) & (1.66) & (3.57) & (0.48) & \\
+\quad GCV penalty & $-2.10^{*}$ & $1.92$ & $-2.31$ & $-2.76^{*}$ & $-4.68$ & $-0.65$ & 0.22\\
+ & (1.27) & (2.84) & (1.62) & (1.64) & (3.62) & (0.50) & \\
+\quad Two-year lag of internet & $-1.90$ & $-1.26$ & $-1.80$ & $-2.20$ & $-0.92$ & $-0.12$ & 0.94\\
+ & (1.24) & (2.54) & (1.29) & (1.49) & (3.17) & (0.43) & \\
+\quad Excluding 2020-2021 & $-2.41^{*}$ & $-0.58$ & $-2.20$ & $-2.74$ & $-1.83$ & $-0.25$ & 0.58\\
+ & (1.33) & (2.75) & (1.36) & (1.74) & (3.68) & (0.50) & \\
+\quad Excluding 2025 & $-2.48^{**}$ & $-0.20$ & $-2.08^{*}$ & $-3.17^{*}$ & $-2.97$ & $-0.40$ & 0.35\\
+ & (1.20) & (2.23) & (1.21) & (1.67) & (3.13) & (0.42) & \\
+\quad Untrimmed outcome & $-2.80^{**}$ & $-3.36$ & $-2.85^{**}$ & $-2.30$ & $0.89$ & $0.12$ & 0.76\\
+ & (1.42) & (2.72) & (1.43) & (1.94) & (3.58) & (0.49) & \\
+\quad Winsorised outcome & $-2.05$ & $-1.84$ & $-2.03$ & $-2.09$ & $-0.33$ & $-0.04$ & 0.91\\
+ & (1.26) & (2.31) & (1.26) & (1.76) & (3.10) & (0.42) & \\
+\quad Without data screening & $-3.01^{***}$ & $-0.67$ & $-3.30^{**}$ & $-3.14^{**}$ & $-2.17$ & $-0.36$ & 0.38\\
+ & (1.15) & (2.68) & (1.35) & (1.51) & (3.28) & (0.47) & \\
+\quad Excluding resource exporters & $-1.42$ & $-1.00$ & $-1.51$ & $-0.74$ & $0.27$ & $-0.01$ & 0.68\\
+ & (1.27) & (2.16) & (1.31) & (1.83) & (3.03) & (0.41) & \\
+\quad High statistical capacity (SPI) & $-2.54^{*}$ & $-0.56$ & $-3.91^{**}$ & $-2.14$ & $-1.95$ & $-0.60$ & 0.33\\
+ & (1.32) & (2.97) & (1.58) & (2.04) & (3.32) & (0.74) & \\
+\quad Population-weighted averages & $-2.10^{*}$ & $1.52$ & $-2.31$ & $-3.00^{*}$ & $-4.52$ & $-0.61$ & 0.23\\
+ & (1.27) & (2.72) & (1.49) & (1.66) & (3.57) & (0.48) & \\
+\quad No Mundlak means & $-2.51^{**}$ & $-1.53$ & $-2.58^{**}$ & $-2.27^{*}$ & $-1.46$ & $-0.22$ & 0.74\\
+ & (1.00) & (1.87) & (1.07) & (1.37) & (2.47) & (0.33) & \\
+\quad WDI data, PWT 11.0 countries, 1996-2023 & $-2.34^{*}$ & $-3.72$ & $-2.54^{*}$ & $-2.29$ & $2.39$ & $0.35$ & 0.48\\
+ & (1.27) & (3.25) & (1.33) & (1.57) & (3.72) & (0.54) & \\
+\quad PWT 11.0, 1996-2019 & $-0.61$ & $-2.72$ & $0.06$ & $-0.56$ & $2.73$ & $3.19$ & 0.59\\
+ & (1.43) & (6.06) & (2.08) & (1.38) & (6.42) & (4.89) & \\
+\quad PWT 11.0: outcome TFP growth & $-2.32^{*}$ & $-5.41^{*}$ & $-2.64$ & $-1.29$ & $4.01$ & $4.28$ & 0.44\\
+ & (1.27) & (3.11) & (1.82) & (1.37) & (3.35) & (2.63) & \\
+\addlinespace
+\multicolumn{8}{l}{\textit{Panel B. Moderator: initial log GDP per worker}}\\
+\quad Adding the investment share & $-2.41^{*}$ & $0.48$ & $-5.21^{**}$ & $-1.80$ & $-2.22$ & $-1.41$ & 0.22\\
+ & (1.23) & (2.59) & (2.25) & (1.52) & (3.01) & (1.15) & \\
+\quad Unpenalised sieve & $-2.10^{*}$ & $2.65$ & $-5.79^{***}$ & $-1.49$ & $-4.15$ & $-2.62^{***}$ & 0.03\\
+ & (1.27) & (2.16) & (2.10) & (1.34) & (2.57) & (0.93) & \\
+\quad Three interior knots & $-2.10^{*}$ & $-0.56$ & $-2.33^{*}$ & $-1.54$ & $-2.90$ & $-1.20$ & 0.31\\
+ & (1.27) & (2.75) & (1.38) & (1.43) & (3.22) & (1.54) & \\
+\quad GCV penalty & $-2.10^{*}$ & $2.51$ & $-5.68^{***}$ & $-1.55$ & $-4.06$ & $-2.56^{***}$ & 0.05\\
+ & (1.27) & (2.21) & (2.10) & (1.34) & (2.64) & (0.98) & \\
+\quad Two-year lag of internet & $-1.90$ & $-0.60$ & $-1.67$ & $-2.98^{**}$ & $-2.57$ & $-1.06$ & 0.39\\
+ & (1.24) & (2.38) & (1.28) & (1.46) & (2.91) & (1.20) & \\
+\quad Excluding 2020-2021 & $-2.41^{*}$ & $-0.22$ & $-3.57^{**}$ & $-3.05^{**}$ & $-2.82$ & $-1.26$ & 0.22\\
+ & (1.33) & (2.75) & (1.67) & (1.35) & (2.95) & (1.24) & \\
+\quad Excluding 2025 & $-2.48^{**}$ & $0.29$ & $-3.89^{**}$ & $-2.09$ & $-2.39$ & $-1.05$ & 0.24\\
+ & (1.20) & (2.49) & (1.75) & (1.36) & (2.76) & (1.13) & \\
+\quad Untrimmed outcome & $-2.80^{**}$ & $0.49$ & $-5.61^{**}$ & $-0.45$ & $-0.94$ & $-2.16$ & 0.08\\
+ & (1.42) & (3.21) & (2.31) & (1.55) & (3.20) & (1.54) & \\
+\quad Winsorised outcome & $-2.05$ & $-0.39$ & $-3.71^{**}$ & $-1.34$ & $-0.95$ & $-0.70$ & 0.35\\
+ & (1.26) & (2.72) & (1.86) & (1.34) & (3.10) & (1.35) & \\
+\quad Without data screening & $-3.01^{***}$ & $-2.41$ & $-4.75^{**}$ & $-2.58^{*}$ & $-0.68$ & $-0.33$ & 0.67\\
+ & (1.15) & (2.13) & (2.05) & (1.39) & (2.57) & (1.55) & \\
+\quad Excluding resource exporters & $-1.42$ & $-0.71$ & $-2.23$ & $-0.74$ & $-0.03$ & $-0.17$ & 0.49\\
+ & (1.27) & (2.08) & (2.20) & (1.44) & (2.44) & (1.00) & \\
+\quad High statistical capacity (SPI) & $-2.54^{*}$ & $-2.24$ & $-3.50^{**}$ & $-3.59$ & $-1.92$ & $-1.29$ & 0.11\\
+ & (1.32) & (2.53) & (1.48) & (2.20) & (3.74) & (2.40) & \\
+\quad Outcome: GDP per capita growth & $-2.55^{*}$ & $1.83$ & $-5.40^{**}$ & $-1.80$ & $-3.68$ & $-2.10^{*}$ & 0.12\\
+ & (1.30) & (1.99) & (2.14) & (1.75) & (2.66) & (1.13) & \\
+\quad Population-weighted averages & $-2.10^{*}$ & $-0.54$ & $-2.32^{*}$ & $-1.60$ & $-2.88$ & $-1.19$ & 0.43\\
+ & (1.27) & (2.75) & (1.38) & (1.43) & (3.33) & (1.54) & \\
+\quad No Mundlak means & $-2.51^{**}$ & $2.08$ & $-5.50^{***}$ & $-1.92$ & $-4.00$ & $-2.51^{**}$ & 0.07\\
+ & (1.00) & (2.13) & (1.60) & (1.49) & (2.62) & (1.11) & \\
+\quad PWT 11.0, 1996-2019 & $-0.61$ & $-3.62$ & $-1.07$ & $0.95$ & $4.64$ & $2.02$ & 0.42\\
+ & (1.43) & (3.18) & (1.53) & (1.53) & (3.64) & (1.58) & \\
+\quad PWT 11.0: outcome TFP growth & $-2.32^{*}$ & $-3.48$ & $-2.36^{*}$ & $-1.94$ & $1.35$ & $0.59$ & 0.31\\
+ & (1.27) & (2.74) & (1.32) & (1.50) & (3.31) & (1.43) & \\
+%% END tables/emp_appendix
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: see Table~\ref{tab:emp}. Robustness checks use three repetitions of the sample split. ``GCV penalty'' selects $\lambda$ by generalised cross-validation. ``Population-weighted averages'' changes only the weighting of the sample-average effect, which is reported in the text.
+\end{tablenotes}
+\end{threeparttable}}
+\end{table}
+\end{appendices}
+
+\bibliography{../refs}
+
+\end{document}

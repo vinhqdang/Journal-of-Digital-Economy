@@ -18,6 +18,7 @@ Replication package for the manuscript
 | `code/plasmode.py` | Plasmode simulation built on the empirical panel |
 | `code/make_outputs.py` | Produces all LaTeX tables and figures |
 | `code/sync_tables.py` | Copies the generated tables into `manuscript/main.tex` |
+| `code/make_springer.py` | Builds the Springer Nature (`sn-jnl`, `sn-basic` author-year) version `manuscript/springer/main_sn.tex` from `main.tex` |
 | `data/raw/` | WDI series (`wdi/`), UNDP HDR 2025 time series, Penn World Table 11.0 (`pwt110.xlsx`) and 10.0 (`pwt100.xlsx`), ITU series via Our World in Data |
 | `data/processed/panel.csv` | Main estimation sample (141 countries, 1996-2025) |
 | `data/processed/panel_pwt11.csv` | PWT 11.0 robustness sample (117 countries, 1996-2023) |
@@ -26,7 +27,8 @@ Replication package for the manuscript
 | `data/processed/screening_log.csv`, `coverage.csv` | Flagged adoption values; sample coverage by income group |
 | `data/raw/wdi/SHA256SUMS` | Checksums of the archived WDI snapshot (retrieved September 2026) |
 | `results/` | Raw simulation draws, summaries and empirical estimates |
-| `manuscript/` | LaTeX source (`main.tex`, `refs.bib`), tables, figures, compiled PDF, highlights |
+| `manuscript/` | LaTeX source (`main.tex`, Elsevier `elsarticle`; `refs.bib`), tables, figures, compiled PDF, highlights |
+| `manuscript/springer/` | Springer Nature version (`main_sn.tex`, `sn-jnl.cls`, `sn-basic.bst`) and its compiled PDF |
 
 ## Reproducing the results
 
@@ -41,6 +43,7 @@ python code/plasmode.py 100 4   # results/plasmode_raw.csv
 python code/make_outputs.py     # manuscript/tables/*.tex, manuscript/figures/*.pdf
 python code/sync_tables.py      # refresh tables inside manuscript/main.tex
 cd manuscript && pdflatex main && bibtex main && pdflatex main && pdflatex main
+python ../code/make_springer.py && cd springer && pdflatex main_sn && bibtex main_sn && pdflatex main_sn && pdflatex main_sn
 ```
 
 ## Using the estimator
