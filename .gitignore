@@ -225,3 +225,10 @@ __marimo__/
 *.bbl
 *.spl
 *.synctex.gz
+
+# Intermediate PDFs (named copies are in submission/)
+manuscript/main.pdf
+manuscript/main_blind.pdf
+manuscript/supplement.pdf
+manuscript/supplement_blind.pdf
+manuscript/title_page.pdf

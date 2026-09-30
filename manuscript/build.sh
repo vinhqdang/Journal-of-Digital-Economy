@@ -8,3 +8,10 @@ for i in 1 2; do
 done
 pdflatex -interaction=nonstopmode title_page >/dev/null
 grep -l "^!" *.log || echo "no LaTeX errors"
+# Copies with descriptive names for submission (the anonymised files carry no author name)
+mkdir -p ../submission
+cp main_blind.pdf ../submission/Digital_Dividend_Manuscript_anonymised.pdf
+cp supplement_blind.pdf ../submission/Digital_Dividend_Supplementary_Material_anonymised.pdf
+cp title_page.pdf ../submission/Digital_Dividend_Title_Page.pdf
+cp main.pdf ../submission/Digital_Dividend_Manuscript_with_author_details.pdf
+cp supplement.pdf ../submission/Digital_Dividend_Supplementary_Material_with_author_details.pdf

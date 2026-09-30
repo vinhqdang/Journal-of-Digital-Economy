@@ -1,6 +1,7 @@
 \documentclass[preprint,12pt,authoryear]{elsarticle}
 \input{preamble}
-\externaldocument{supplement}
+\ifdefined\blindversion\externaldocument{supplement_blind}[Digital_Dividend_Supplementary_Material_anonymised.pdf]
+\else\externaldocument{supplement}[Digital_Dividend_Supplementary_Material_with_author_details.pdf]\fi
 
 \begin{document}
 \doublespacing

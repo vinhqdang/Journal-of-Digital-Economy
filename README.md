@@ -28,7 +28,7 @@ Replication package for the manuscript
 | `data/processed/` | Estimation samples (`panel.csv` baseline, `panel_common.csv`, `panel_untrimmed.csv`, `panel_unscreened.csv`, `panel_pwt11.csv`, `panel_pwt.csv`), `sample_flow.csv`, `screening_log.csv`, `coverage.csv` |
 | `results/` | Raw simulation draws, bootstrap draws, summaries and empirical estimates |
 | `manuscript/` | `main.tex` (manuscript), `supplement.tex` (supplementary material), `main_blind.tex` and `supplement_blind.tex` (anonymised versions), `title_page.tex`, `refs.bib`, tables, figures, highlights, `build.sh` |
-| `submission/` | Anonymised replication archive for the reviewers |
+| `submission/` | Files for submission, written by `manuscript/build.sh`: `Digital_Dividend_Manuscript_anonymised.pdf`, `Digital_Dividend_Supplementary_Material_anonymised.pdf` and `Digital_Dividend_Title_Page.pdf` (double-blind review), `Digital_Dividend_Manuscript_with_author_details.pdf` and `Digital_Dividend_Supplementary_Material_with_author_details.pdf`, and the anonymised replication archive `replication_anonymous.zip` |
 | `requirements.txt`, `requirements-lock.txt` | Minimum versions, and the exact versions used for the reported results |
 
 ## Reproducing the results from the archived snapshot
@@ -48,7 +48,7 @@ python code/simulation.py 100 4     # results/simulation_raw.csv
 python code/make_outputs.py         # tables, figures, numbers.tex
 python code/sync_tables.py          # refresh tables inside the LaTeX sources
 python code/verify.py results       # compare with the numbers reported in the paper
-sh manuscript/build.sh              # PDFs (pdflatex + bibtex)
+sh manuscript/build.sh              # PDFs (pdflatex + bibtex), copied to submission/
 ```
 
 On four cores the estimation scripts take about four hours in total. Main estimates use 20

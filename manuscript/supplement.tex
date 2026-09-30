@@ -1,6 +1,7 @@
 \documentclass[preprint,12pt,authoryear]{elsarticle}
 \input{preamble}
-\externaldocument{main}
+\ifdefined\blindversion\externaldocument{main_blind}[Digital_Dividend_Manuscript_anonymised.pdf]
+\else\externaldocument{main}[Digital_Dividend_Manuscript_with_author_details.pdf]\fi
 \renewcommand{\theassumption}{A.\arabic{assumption}}
 \renewcommand{\thelemma}{A.\arabic{lemma}}
 
