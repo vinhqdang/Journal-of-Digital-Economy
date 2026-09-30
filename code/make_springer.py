@@ -94,7 +94,9 @@ def main():
     lines = ["\\backmatter\n", "\\section*{Declarations}\n"]
     for head, text in items:
         head = {"Declaration of competing interest": "Competing interests",
-                "CRediT authorship contribution statement": "Author contribution"}.get(head, head)
+                "CRediT authorship contribution statement": "Author contribution",
+                "Declaration of generative AI and AI-assisted technologies in the manuscript preparation process":
+                "Use of generative AI"}.get(head, head)
         lines.append("\\bmhead{%s}\n%s\n" % (head, text.strip()))
     decl = "\n".join(lines)
 
