@@ -1,7 +1,7 @@
 Highlights
 
-- Within countries, internet diffusion is not followed by faster productivity growth
+- Higher lagged internet use is not associated with faster productivity growth
 - No robust variation with schooling, initial productivity or years since take-off
-- Development gradient shrinks by two thirds between PWT 10.0 and 11.0 releases
-- Panel-DOSE: debiased spline estimator for heterogeneous effects in FE panels
-- Stylised and plasmode simulations show where the flexible estimator helps
+- Development gradient appears in Penn World Table data but not in World Bank data
+- PWT 11.0 revision lowers the gradient, but the change is imprecisely estimated
+- Panel-DOSE: debiased spline estimator for heterogeneity in fixed-effects panels

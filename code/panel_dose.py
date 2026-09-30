@@ -16,8 +16,9 @@ g(.) is left unrestricted and learned with machine learning.  The algorithm
 4. solves the Neyman-orthogonal moment for beta with an O'Sullivan penalty (the integrated
    squared second derivative of theta), whose null space is exactly the linear functions for
    any knot placement; the penalty weight is chosen by leave-units-out cross-validation;
-5. repeats the sample split and aggregates each reported functional by the median across
-   splits, with a cluster-robust sandwich variance and sup-t simultaneous bands and tests.
+5. repeats the sample split and aggregates each reported functional (or vector of functionals)
+   by the median across splits, with a cluster-robust sandwich variance, and uses the same
+   functional-wise aggregation for sup-t simultaneous bands and shape tests.
 """
 from dataclasses import dataclass, field
 
@@ -118,6 +119,7 @@ class PanelDOSE:
     cv_folds: int = 10
     lambdas: np.ndarray = field(default_factory=lambda: np.r_[0.0, np.logspace(-6, 4, 41)])
     undersmooth: float = 1.0        # multiply the selected penalty by this factor (<1 undersmooths)
+    lambda_fixed: float = None       # if set, use this penalty instead of cross-validation
     seed: int = 0
 
     # ---------------------------------------------------------------- sieve
@@ -125,7 +127,10 @@ class PanelDOSE:
         lo, hi = np.quantile(s, [0.005, 0.995])
         qs = np.linspace(0, 1, self.n_knots + 2)[1:-1]
         self.lo_, self.hi_ = lo, hi
-        self.knots_ = np.quantile(np.clip(s, lo, hi), qs)
+        # ties (e.g. a moderator censored at zero) can produce repeated quantiles: keep distinct
+        # interior knots only
+        kn = np.unique(np.quantile(np.clip(s, lo, hi), qs))
+        self.knots_ = kn[(kn > lo) & (kn < hi)]
 
     def _B(self, s, deriv=0):
         return bspline_basis(s, self.knots_, self.lo_, self.hi_, self.degree, deriv)
@@ -159,7 +164,8 @@ class PanelDOSE:
                                        + [d] + ([z] if z and z not in self.mundlak_exclude
                                                 else [])))
             feats = pd.concat([feats, mundlak_means(df, unit, extra)], axis=1)
-        feats["_t"] = df[time].values
+        tv = df[time]
+        feats["_t"] = tv.values if pd.api.types.is_numeric_dtype(tv) else pd.factorize(tv)[0]
         F = feats.values.astype(float)
 
         self._resid, self._raw = [], []
@@ -194,13 +200,14 @@ class PanelDOSE:
         self.lambda_ = float(np.median([s["lam"] for s in self._splits]))
         self.edf_ = float(np.median([s["edf"] for s in self._splits]))
 
-    def refit_final(self, penalty=None, undersmooth=None, lambda_fixed=None):
+    def refit_final(self, penalty=None, undersmooth=None, lambda_fixed=...):
         """Re-solve the final stage on stored cross-fitted residuals (no new nuisance fits)."""
         if penalty is not None:
             self.penalty = penalty
         if undersmooth is not None:
             self.undersmooth = undersmooth
-        self._lambda_fixed = lambda_fixed
+        if lambda_fixed is not ...:
+            self.lambda_fixed = lambda_fixed
         self._aggregate()
         return self
 
@@ -285,7 +292,7 @@ class PanelDOSE:
     def _final_stage(self, ry, R, pen):
         n, K = R.shape
         RtR, Rty = R.T @ R, R.T @ ry
-        fixed = getattr(self, "_lambda_fixed", None)
+        fixed = self.lambda_fixed
         lam = self._select_lambda(ry, R, pen) if fixed is None else float(fixed)
         lam_used = lam * self.undersmooth
         sc = self._scale(RtR, pen)
@@ -308,22 +315,26 @@ class PanelDOSE:
 
     # ---------------------------------------------------------------- functionals
     def _functional(self, L):
-        """Median-aggregated estimate and variance of the linear functionals L @ beta.
+        """Median-aggregated estimate and covariance of the vector of functionals L @ beta.
 
-        Each split gives L b_s and L V_s L'; following Chernozhukov et al. (2018) the reported
-        estimate is the median of L b_s and the variance the median of
-        L V_s L' + (L b_s - median)^2, computed functional by functional.  The covariance used for
-        simultaneous inference rescales the median-aggregated coefficient covariance to these
-        variances.
+        Each split s gives c_s = L b_s and C_s = L V_s L'.  Following Chernozhukov et al. (2018),
+        the estimate is the element-wise median of c_s and the covariance the element-wise median
+        of C_s + (c_s - c)(c_s - c)', projected on the positive semi-definite cone.  Any linear
+        transformation of the functionals (centring, detrending, contrasts) is applied to L
+        *before* aggregation, so every reported quantity is aggregated functional by functional.
         """
         L = np.atleast_2d(L)
         ests = np.array([L @ s["b"] for s in self._splits])
         med = np.median(ests, axis=0)
-        var = np.median(np.array([np.diag(L @ s["V"] @ L.T) for s in self._splits])
-                        + (ests - med) ** 2, axis=0)
-        C = L @ self.cov_ @ L.T
+        Cs = np.array([L @ s["V"] @ L.T + np.outer(e - med, e - med)
+                       for s, e in zip(self._splits, ests)])
+        C = np.median(Cs, axis=0)
+        w, U = np.linalg.eigh((C + C.T) / 2)
+        C = (U * np.clip(w, 0, None)) @ U.T
+        # keep the median variances exactly on the diagonal
+        var = np.median(Cs[:, np.arange(len(med)), np.arange(len(med))], axis=0)
         d = np.sqrt(np.clip(np.diag(C), 1e-300, None))
-        sd = np.sqrt(np.clip(var, 1e-300, None))
+        sd = np.sqrt(np.clip(var, 0, None))
         C = C / np.outer(d, d) * np.outer(sd, sd)
         return med, sd, C
 
@@ -381,28 +392,31 @@ class PanelDOSE:
         """Sup-t tests that theta(.) is constant and that it is linear on a quantile grid.
 
         The statistic is max_j |c_j| / sd(c_j) for the centred (constancy) or linearly detrended
-        (linearity) values c = M L beta; the critical distribution is simulated from the
-        (possibly rank-deficient) covariance M L V L' M, so no matrix inversion is needed.
+        (linearity) values c = M L beta.  The transformation M is applied to each split's
+        coefficients before the median aggregation, and the critical distribution is simulated
+        from the aggregated (possibly rank-deficient) covariance of c, so no matrix inversion is
+        needed.  Constant and linear functions lie in the null space of the O'Sullivan penalty,
+        so under either null hypothesis the penalised estimator of c has no smoothing bias for
+        a given penalty.
         """
         s = self._Z if self.mode == "vc" else self._D
         grid = np.quantile(s, np.linspace(0.05, 0.95, n_grid))
-        est, _, C = self._functional(self._L_theta(grid))
+        Lg = self._L_theta(grid)
         out = {}
         for name, X in [("const", np.ones((n_grid, 1))),
                         ("lin", np.c_[np.ones(n_grid), grid])]:
             M = np.eye(n_grid) - X @ np.linalg.pinv(X)
-            c, Cc = M @ est, M @ C @ M.T
-            keep = np.diag(Cc) > 1e-12 * np.max(np.diag(Cc))
+            c, sd, Cc = self._functional(M @ Lg)
+            keep = sd > 1e-6 * np.max(sd)
             _, stat, p = _sup_t(c[keep], Cc[np.ix_(keep, keep)], n_sim, seed)
             out[name] = (stat, p)
         return out
 
     def influence(self, l):
-        """Per-unit influence contributions of the functional l'beta, averaged over splits.
+        """First-order per-unit influence contributions of l'beta, averaged over splits.
 
-        Returns a Series indexed by unit such that the functional's variance is approximately
-        adj * sum_i phi_i^2; two estimators fitted on the same units can therefore be compared
-        with Var(a - b) = adj * sum_i (phi_a,i - phi_b,i)^2.
+        A diagnostic: it holds the nuisance fits, folds, basis and penalty fixed, so it is a
+        linear approximation to the effect of deleting a unit, not a refit.
         """
         u_codes, u_names = pd.factorize(self.unit_)
         phis = np.mean([s["infl"] @ l for s in self._splits], axis=0)
@@ -411,14 +425,23 @@ class PanelDOSE:
 
     def twoway_se(self, l):
         """Standard error of l'beta clustered by unit and by time (Cameron, Gelbach and Miller,
-        2011): V = V_unit + V_time - V_het, median-aggregated across splits."""
-        vs = []
+        2011): V = c_G V_unit + c_T V_time - c_n V_obs, with c_G = G/(G-1), c_T = T/(T-1) and
+        c_n = n/(n-K).  If the combination is negative (possible in finite samples) the unit-
+        clustered variance is used.  Split aggregation as in _functional."""
+        ests, vs = [], []
+        n = len(self.unit_)
+        G = len(np.unique(self.unit_))
+        T = len(np.unique(self.time_))
         for s in self._splits:
-            vu = np.sum((s["infl"] @ l) ** 2)
-            vt = np.sum((s["infl_t"] @ l) ** 2)
-            vh = np.sum((s["infl_h"] @ l) ** 2)
-            vs.append(s["adj"] * max(vu + vt - vh, vu))
-        return float(np.sqrt(np.median(vs)))
+            vu = np.sum((s["infl"] @ l) ** 2) * G / (G - 1)
+            vt = np.sum((s["infl_t"] @ l) ** 2) * T / (T - 1)
+            vh = np.sum((s["infl_h"] @ l) ** 2) * n / max(n - self.K_, 1)
+            v = vu + vt - vh
+            vs.append(v if v > 0 else vu)
+            ests.append(float(s["b"] @ l))
+        ests = np.array(ests)
+        med = np.median(ests)
+        return float(np.sqrt(np.median(np.array(vs) + (ests - med) ** 2)))
 
     def identifying_variation(self, masks=None):
         """Share of the within-transformed treatment variance left after the nuisance step."""

@@ -1,0 +1,14 @@
+step,obs,countries
+Country-years 1996-2025 (WDI economies),6510,217
+Outcome observed,5257,177
+Treatment observed,5042,177
+Schooling observed,4830,174
+Government share observed,4344,166
+Openness observed,4314,165
+Population growth observed,4314,165
+Dependency ratio observed,4314,165
+Urban share observed,4314,165
+Initial productivity observed,4314,165
+Outcome within 1st-99th percentiles,4226,165
+Countries with at least 15 years (baseline),4075,149
+Common sample of the earlier version,3787,141

@@ -1,0 +1,24 @@
+{
+ "A": {
+  "lambda": 17.78279410038923,
+  "contrast": -0.9430804945042732,
+  "contrast_se": 3.389366487125407,
+  "fedml": -2.7898357472822437,
+  "sd_treatment_residual": 0.06655818443595905,
+  "outcome_contrast": -0.943080494504265,
+  "outcome_fedml": -2.7898357472822437,
+  "treatment_contrast": -0.3259588317601183,
+  "treatment_fedml": -2.7898357472822437
+ },
+ "B": {
+  "lambda": 1.0,
+  "contrast": -0.5510870097500664,
+  "contrast_se": 3.1060876084988522,
+  "fedml": -2.7898357472822437,
+  "sd_treatment_residual": 0.06655818443595905,
+  "outcome_contrast": -0.5510870097500686,
+  "outcome_fedml": -2.7898357472822437,
+  "treatment_contrast": -0.5510870097500642,
+  "treatment_fedml": -2.789835747282244
+ }
+}

@@ -1,0 +1,32 @@
+% Shared preamble of main.tex, main_blind.tex and supplement.tex
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{setspace}
+\usepackage[margin=1in]{geometry}
+\usepackage{xr-hyper}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{bm}
+\usepackage{etoolbox}
+\AtBeginEnvironment{table}{\singlespacing}
+\AtBeginEnvironment{algorithm}{\singlespacing}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\M}{\mathcal{M}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\input{tables/numbers.tex}
+
+\journal{Journal of Digital Economy}
+% main_blind.tex defines \blindversion before reading this file: anonymised manuscript for
+% double-blind review (author details and declarations are on the separate title page)
+\newif\ifblind
+\ifdefined\blindversion\blindtrue\fi

@@ -1,0 +1,354 @@
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+\input{preamble}
+\externaldocument{main}
+\renewcommand{\theassumption}{A.\arabic{assumption}}
+\renewcommand{\thelemma}{A.\arabic{lemma}}
+
+\begin{document}
+\doublespacing
+\emergencystretch=3em
+\begin{frontmatter}
+\title{Supplementary material for ``Searching for the digital dividend: Internet diffusion and productivity growth in 149 economies, 1996--2025''}
+\ifblind\else
+\author{Quang-Vinh Dang}
+\affiliation{organization={British University Vietnam}, city={Hung Yen}, country={Vietnam}}
+\fi
+\end{frontmatter}
+
+\appendix
+\section{Proofs}\label{app:proofs}
+
+Throughout, the year effect is a function of the time index $t$, which is an element of $F_{it}$, so $\lambda_t$ is absorbed by $\ell$. The two-way operator $\M$ is the orthogonal projection onto the complement of the space spanned by country and year indicators; it is symmetric and idempotent, and $\M c=0$ for any vector with elements $c_{it}=c_i+c_t$. For country $i$, collect its $T_i$ observations into $Y_i$, $\Phi_i$ ($T_i\times K$) and $F_i$, and write $V_i=\Phi_i-m_0(F_i)$ and $e_i=Y_i-\ell_0(F_i)-V_i\beta_0$. Under Assumptions~\ref{as:exo}--\ref{as:cre} and $r_K=0$, $e_{it}=a_i+\varepsilon_{it}$. Let $Q_i=I_{T_i}-T_i^{-1}\iota\iota'$ be the country-demeaning matrix, $Q=\mathrm{diag}(Q_1,\dots,Q_G)$, and let $A$ be the $n\times\mathcal T$ matrix of indicators of the $\mathcal T$ calendar years, with country blocks $A_i$. By the Frisch--Waugh--Lovell theorem the two-way operator is, for balanced and unbalanced panels alike,
+\[
+\M=Q-QA\,(A'QA)^{+}A'Q ,
+\]
+where $^{+}$ denotes the Moore--Penrose inverse ($A'QA$ has rank $\mathcal T-1$ because $A\iota$ lies in the span of the country indicators). The alternating-projection algorithm used in the code converges to this orthogonal projection \citep[the von Neumann--Halperin theorem; see][]{gaure2013lfe}. The following lemma allows us to replace $\M$ by $Q$ in the asymptotic arguments.
+
+\begin{assumption}[Panel structure]\label{as:panel}
+(a) The number of calendar years $\mathcal T$ is fixed. (b) The set of years in which country $i$ is observed, $\mathcal S_i$, is independent across countries, and $\E[\varepsilon_{it}\mid \mathcal S_i,D_i,X_i,\alpha_i]=0$ and $\E[D_{it}\mid \mathcal S_i,F_{i1},\dots,F_{iT_i}]=\E[D_{it}\mid F_{it}]$, i.e.\ the unbalancedness is ignorable given the observed paths. (c) The smallest non-zero eigenvalue of $G^{-1}A'QA$ is bounded away from zero with probability approaching one; this holds, for example, if each calendar year is observed, together with at least one other year, for a fixed positive fraction of the countries.
+\end{assumption}
+
+\begin{lemma}[Year demeaning]\label{lem:year}
+Let $W$ and $E$ be $n$-vectors (or $n\times K$ arrays) with country blocks $W_i,E_i$ that are independent across countries, have bounded fourth moments, and satisfy $\E[A_i'Q_iW_i]=0$ and $\E[A_i'Q_iE_i]=0$. Under Assumption~\ref{as:panel}, $G^{-1/2}W'\M E=G^{-1/2}\sum_iW_i'Q_iE_i+O_p(G^{-1/2})$ and $G^{-1}W'\M E=G^{-1}\sum_iW_i'Q_iE_i+O_p(G^{-1})$.
+\end{lemma}
+
+\begin{proof}
+By the expression for $\M$,
+\[
+G^{-1/2}W'\M E=G^{-1/2}W'QE-\big(G^{-1/2}W'QA\big)\big(G^{-1}A'QA\big)^{+}\big(G^{-1/2}A'QE\big)G^{-1/2}.
+\] The vector $G^{-1/2}A'QE=G^{-1/2}\sum_iA_i'Q_iE_i$ is a normalised sum of $G$ independent mean-zero terms with bounded variance, hence $O_p(1)$ by Chebyshev's inequality, and the same holds for $G^{-1/2}A'QW$. By Assumption~\ref{as:panel}(c), $\|(G^{-1}A'QA)^{+}\|=O_p(1)$; because the Moore--Penrose inverse is applied on the row space of $A'Q$, in which both $A'QW$ and $A'QE$ lie, no further condition is needed for the rank-deficient direction. The second term is therefore $O_p(1)\cdot O_p(1)\cdot O_p(1)\cdot G^{-1/2}=O_p(G^{-1/2})$. The second statement follows in the same way.
+\end{proof}
+
+In the applications of the lemma, $W$ is $V=\Phi-m_0(F)$ or a nuisance error, and $E$ is $e$ or a nuisance error. The condition $\E[A_i'Q_iV_i]=0$ holds because $Q_iA_i$ is a function of the observed years, which are coordinates of $F$, and $\E[V_{it}\mid\mathcal S_i,F_{i1},\dots,F_{iT_i}]=0$ by Assumptions~\ref{as:suff} and~\ref{as:panel}(b); $\E[A_i'Q_ie_i]=\E[A_i'Q_i\varepsilon_i]=0$ by Assumptions~\ref{as:exo} and~\ref{as:panel}(b). For the nuisance errors, which are estimated on other countries and are therefore fixed functions conditionally on the training folds, the same algebra shows that the correction term is bounded by $O_p(1)$ times the product of their $L_2$ norms and $G^{-1/2}\|A'QV\|$ or $G^{-1/2}\|A'Qe\|$, which is of smaller order than the terms already controlled in the proof of Proposition~\ref{prop:an}.
+
+\paragraph{Proof of Proposition~\ref{prop:orth}}
+(i) For directions $\delta_\ell(F)$ and $\delta_m(F)$, and using Lemma~\ref{lem:year},
+\[
+\psi(\beta_0;\ell_0+r\delta_\ell,m_0+r\delta_m)=\E\big[(V_i-r\delta_{m,i})'Q_i\big(e_i-r\delta_{\ell,i}+r\delta_{m,i}\beta_0\big)\big].
+\]
+Differentiating at $r=0$ gives $-\E[\delta_{m,i}'Q_ie_i]+\E[V_i'Q_i(\delta_{m,i}\beta_0-\delta_{\ell,i})]$. In the first term, $Q_ie_i=Q_i\varepsilon_i$ because $a_i$ is constant within country, and $\E[\varepsilon_{it}\mid F_{i1},\dots,F_{iT_i}]=0$ by Assumption~\ref{as:exo}, because $F_{is}$ is a function of $(D_i,X_i)$; the term is zero. In the second term, $Q_iw_i$ is a function of $(F_{i1},\dots,F_{iT_i})$ for $w_i=\delta_{m,i}\beta_0-\delta_{\ell,i}$, and, when $Z_{it}$ is in $F_{it}$, $\E[V_{it}\mid F_{i1},\dots,F_{iT_i}]=b(Z_{it})\{\E[D_{it}\mid F_{i1},\dots,F_{iT_i}]-\mu(F_{it})\}=0$ by Assumption~\ref{as:suff} (in the dose-response model the same condition is imposed on $\Phi$); the term is zero.
+
+(ii) $\M(Y-\ell-c)=\M(Y-\ell)-\M c=\M(Y-\ell)$ whenever $c_{it}=c_i+c_t$, because $\M$ annihilates the span of the country and year indicators; the same holds for each column of $m$. If instead $\hat\mu=\mu+c_i$, the regressors become $\M\{b(Z)(D-\mu)\}-\M\{b(Z_{it})c_i\}$. If $b(Z_{it})=\bar b_i$ does not vary within country (in particular if $K=1$, where $b\equiv1$, or if $Z$ is time-invariant), then $b(Z_{it})c_i=\bar b_ic_i$ is a country-specific constant vector and $\M\{b(Z_{it})c_i\}=0$. When $b(Z_{it})$ varies within country the term is in general non-zero. Note that multiplication by $c_i$ does not commute with the two-way operator, $\M\{c_ib(Z_{it})\}\neq c_i\M\{b(Z_{it})\}$ in general, because $\M$ also removes year means; for example, with two countries observed in three years, $c=(1,1,1,3,3,3)'$ and $b=(0,1,4,1,3,8)'$, $\M(cb)=(3.67,1.17,-4.83,-3.67,-1.17,4.83)'$ whereas $c\odot\M b=(0.67,0.17,-0.83,-2.00,-0.50,2.50)'$. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:struct}}
+If $Z_{it}$ is a coordinate of $F_{it}$, then $b_k(Z_{it})$ is $F_{it}$-measurable and $\E[D_{it}b_k(Z_{it})\mid F_{it}]=b_k(Z_{it})\E[D_{it}\mid F_{it}]$. Consequently $\Phi_{it}-m(F_{it})=b(Z_{it})\{D_{it}-\mu(F_{it})\}$. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:an}}
+Write $\tilde\Phi=\M(\Phi-\hat m)$, $\tilde Y=\M(Y-\hat\ell)$, and let $\tilde\Phi^0$ be the same object at the true nuisance functions. From~\eqref{eq:pls},
+\[
+\sqrt G(\hat\beta_\lambda-\beta_K)=\Big(\tfrac1G\tilde\Phi'\tilde\Phi+\lambda\tfrac\kappa G\Omega\Big)^{-1}\Big\{\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)-\sqrt G\lambda\tfrac\kappa G\Omega\beta_K\Big\}.
+\]
+The last term vanishes because $\kappa/G=O_p(1)$ and $\lambda_G\sqrt G\to0$. Let $\Delta_m=\hat m-m_0$ and $\Delta_\ell=\hat\ell-\ell_0$ on the evaluation fold. By Lemma~\ref{lem:year},
+\[
+\tfrac1{\sqrt G}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)=\tfrac1{\sqrt G}\sum_iV_i'Q_ie_i+R_1+R_2+R_3+O_p(G^{-1/2}),
+\]
+where $R_1=-G^{-1/2}\sum_i\Delta_{m,i}'Q_ie_i$, $R_2=G^{-1/2}\sum_iV_i'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i})$ and $R_3=-G^{-1/2}\sum_i\Delta_{m,i}'Q_i(\Delta_{m,i}\beta_K-\Delta_{\ell,i})$. Because the nuisance functions are estimated on countries outside the evaluation fold, conditionally on the training sample the summands of $R_1$ and $R_2$ are independent across countries with mean zero (by Assumptions~\ref{as:exo} and~\ref{as:suff}, as in the proof of Proposition~\ref{prop:orth}), and their conditional variances are bounded by a constant times $\|\Delta_m\|_2^2$ and $\|\Delta_m\|_2^2+\|Q\Delta_\ell\|_2^2$; hence $R_1,R_2=o_p(1)$. By the Cauchy--Schwarz inequality, $\|R_3\|\le C\sqrt G\,\|\Delta_m\|_2(\|\Delta_m\|_2+\|Q\Delta_\ell\|_2)$, which is $o_p(1)$ under Assumption~\ref{as:reg}(b); by Proposition~\ref{prop:struct}, $\|\Delta_m\|_2\le C\|\hat\mu-\mu\|_2$. Only the country-demeaned error $Q\Delta_\ell$ appears because $Q$ annihilates country constants. Similarly $G^{-1}\tilde\Phi'\tilde\Phi\xrightarrow{p}J$. The Lindeberg--Feller central limit theorem for independent clusters gives $G^{-1/2}\sum_iV_i'Q_ie_i=G^{-1/2}\sum_is_i\xrightarrow{d}N(0,\Omega_s)$. Consistency of $G\hat V$ follows from standard arguments for cluster-robust variance estimators \citep{cameron2015cluster}. For a fixed number $S$ of splits, each $w'\hat\beta_s$ has the same linear representation, so the median does too and the variance adjustment is asymptotically negligible \citep{chernozhukov2018dml}. \qed
+
+\paragraph{Proof of Proposition~\ref{prop:null}}
+Let $A_\lambda=\tilde\Phi'\tilde\Phi+\lambda\kappa\Omega$. From~\eqref{eq:pls}, $\hat\beta_\lambda=A_\lambda^{-1}\tilde\Phi'\tilde Y$, so that $\hat\beta_\lambda-\tilde\beta_\lambda=A_\lambda^{-1}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)$. The expansion of $G^{-1/2}\tilde\Phi'(\tilde Y-\tilde\Phi\beta_K)$ in the proof of Proposition~\ref{prop:an} does not involve the penalty, and $G^{-1}A_\lambda\xrightarrow{p}J_\lambda$, which is positive definite because $J$ is. The first claim follows. If $\theta(z)=a+bz$, then $\theta$ lies in the span of the cubic B-spline basis, $r_K=0$, and $b(z)'\beta_K$ has zero second derivative, so $\beta_K'\Omega\beta_K=0$; because $\Omega$ is positive semi-definite, $\Omega\beta_K=0$ and $\tilde\beta_\lambda=A_\lambda^{-1}(A_\lambda-\lambda\kappa\Omega)\beta_K=\beta_K$. The residuals $\hat u$ then differ from the true within-transformed errors only by terms controlled in the proof of Proposition~\ref{prop:an}, so $G\hat V$ is consistent. The linearity statistic is a continuous function of $\sqrt G\,ML_g(\hat\beta_\lambda-\beta_K)$, where $L_g$ evaluates $b(\cdot)$ on the grid and $M$ removes the linear fit on the grid, and $ML_g\beta_K=0$ under the null; its limit distribution is that of the maximum of a Gaussian vector with the estimated covariance, which is what the simulated critical value approximates. A constant $\theta$ is a special case of a linear one. \qed
+
+\section{Data and implementation details}\label{app:data}
+
+\paragraph{Variables}
+\emph{Main panel (1996--2025).} From the World Development Indicators (July 2026 release, retrieved through the World Bank API in September 2026): GDP per person employed at constant 2021 PPP dollars (\texttt{SL.GDP.PCAP.EM.KD}); individuals using the internet (\texttt{IT.NET.USER.ZS}); mobile cellular (\texttt{IT.CEL.SETS.P2}) and fixed broadband (\texttt{IT.NET.BBND.P2}) subscriptions per 100 people; gross capital formation (\texttt{NE.GDI.TOTL.ZS}), government final consumption (\texttt{NE.CON.GOVT.ZS}), exports (\texttt{NE.EXP.GNFS.ZS}) and imports (\texttt{NE.IMP.GNFS.ZS}) as percentages of GDP; population growth (\texttt{SP.POP.GROW}) and total population (\texttt{SP.POP.TOTL}); the urban population share (\texttt{SP.URB.TOTL.IN.ZS}); the age-dependency ratio (\texttt{SP.POP.DPND}); GDP per capita at constant 2015 dollars (\texttt{NY.GDP.PCAP.KD}); the Statistical Performance Indicators overall score (\texttt{IQ.SPI.OVRL}, country mean over 2016--2024); fuel and ores-and-metals exports as percentages of merchandise exports (\texttt{TX.VAL.FUEL.ZS.UN}, \texttt{TX.VAL.MMTL.ZS.UN}; resource exporters are countries whose combined share averages at least 50\% over 1996--2025); fixed telephone subscriptions per 100 people in 1990 (\texttt{IT.MLT.MAIN.P2}); and learning-adjusted years of schooling (\texttt{HD.HCI.LAYS}, country mean). Mean years of schooling is taken from the UNDP Human Development Report 2025 composite-indices time series (1990--2023); the 2024 value is the 2023 value plus the country's 2019--2023 linear trend. Initial log GDP per worker is the average of the available values in 1991--1995 (for Montenegro, the first available value, 1997). Percentages are divided by 100. Broadband subscriptions are set to zero in the years before a country's first reported value, on the assumption that the service did not exist; countries that never report broadband are left missing, and a robustness check leaves all pre-report years missing. Regional and income aggregates are excluded. Region-by-year effects use the seven World Bank regions.
+
+\emph{Screening of adoption series.} Values are set to missing when the internet share is outside $[0,100]$ or changes by more than 25 points in a year, when mobile subscriptions exceed 250 per 100 people or change by more than 100 per 100, or when broadband subscriptions exceed 60 per 100 or change by more than 20 per 100. The rules flag $\nm{nflags}$ values ($\nm{flagsinternet}$ internet, $\nm{flagsmobile}$ mobile, $\nm{flagsbroadband}$ broadband). Only the internet flags affect the baseline sample. The list is part of the replication package. The unscreened sample, built with the same trimming cutoffs and countries as the baseline ($\nm{nobsuns}$ observations), gives a headline estimate of $\nm{uns}$ ($\nm{unsse}$). The untrimmed sample keeps the baseline countries and all their observations ($\nm{nobsunt}$).
+
+\emph{PWT panels.} From the Penn World Table 11.0 (1996--2023) and 10.0 (1996--2019), with identical definitions: labour productivity growth is the log change of real GDP at constant national prices (\texttt{rgdpna}) divided by persons engaged (\texttt{emp}); initial productivity is the 1991--1995 average of log output-side real GDP at current PPPs (\texttt{cgdpo}) per person engaged, and the national-prices alternative uses \texttt{rgdpna}; TFP growth is the log change of \texttt{rtfpna}; the human capital index is \texttt{hc}; the government share is \texttt{csh\_g}; openness is \texttt{csh\_x}$-$\texttt{csh\_m}, which equals exports plus imports as shares of GDP because PWT records \texttt{csh\_m} with a negative sign; the labour share is \texttt{labsh}. The adoption series are the ITU data distributed by Our World in Data. All controls and the treatment enter with a one-year lag in all panels.
+
+\paragraph{Invariance check}
+We add country-specific constants to the cross-fitted residuals of the baseline and re-solve the final stage with the penalty held at its selected value (\texttt{code/invariance\_check.py}). Constants added to the outcome residuals (standard deviation 1) leave every estimate unchanged up to numerical precision, as Proposition~\ref{prop:orth}(ii) states. Constants added to the treatment residuals (standard deviation 0.05, against a residual standard deviation of $\nm{invsd}$) leave the constant-effect estimate unchanged. They also leave the Panel B estimates unchanged, because initial productivity is time-invariant, so that $b(Z_{it})$ is constant within country. For the time-varying schooling moderator they move the tercile contrast from $\nm{invcA}$ to $\nm{invtA}$, about $\nm{invshiftse}$ of its standard error.
+
+\paragraph{Sample}
+Table~\ref{tab:flow} shows how the baseline sample is obtained from the WDI country-years. Montenegro, which has no productivity data before 1997, is the only country whose initial productivity is not a 1991--1995 average; it takes its first available value, and excluding it leaves the results unchanged (Table~\ref{tab:empappbc}).
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Sample construction, WDI panel.}\label{tab:flow}
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+Step & Observations & Countries\\
+\midrule
+%% BEGIN tables/sample_flow.tex (generated by code/make_outputs.py)
+Country-years 1996-2025 (WDI economies) & 6,510 & 217\\
+Outcome observed & 5,257 & 177\\
+Treatment observed & 5,042 & 177\\
+Schooling observed & 4,830 & 174\\
+Government share observed & 4,344 & 166\\
+Openness observed & 4,314 & 165\\
+Population growth observed & 4,314 & 165\\
+Dependency ratio observed & 4,314 & 165\\
+Urban share observed & 4,314 & 165\\
+Initial productivity observed & 4,314 & 165\\
+Outcome within 1st-99th percentiles & 4,226 & 165\\
+Countries with at least 15 years (baseline) & 4,075 & 149\\
+Common sample of the earlier version & 3,787 & 141\\
+%% END tables/sample_flow
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\footnotesize
+\item Notes: each row applies one additional condition to the previous row. ``Observed'' refers to the variable entering the regression (lagged where applicable). The last row is the sample of the earlier version of this paper, which also required mobile and broadband subscriptions, the investment share, lagged productivity and growth, and the second lag of the treatment, with trimming cutoffs computed on that sample.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Countries}
+Table~\ref{tab:countries} lists the $\nm{ncty}$ countries of the main panel by tercile of initial GDP per worker.
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Countries in the main estimation sample, by tercile of initial GDP per worker.}\label{tab:countries}
+\footnotesize
+\begin{tabular}{lp{0.82\textwidth}}
+\toprule
+Group & Countries\\
+\midrule
+%% BEGIN tables/countries.tex (generated by code/make_outputs.py)
+Low & Albania; Armenia; Azerbaijan; Bangladesh; Benin; Bolivia; Bosnia and Herzegovina; Burkina Faso; Cabo Verde; Cambodia; Cameroon; Central African Republic; Chad; China; Comoros; Congo, Dem. Rep.; Equatorial Guinea; Gambia, The; Georgia; Ghana; Guinea; Guinea-Bissau; Haiti; Honduras; India; Indonesia; Kenya; Kyrgyz Republic; Lao PDR; Lesotho; Madagascar; Mali; Mongolia; Mozambique; Nepal; Nicaragua; Niger; Pakistan; Philippines; Rwanda; Senegal; Sierra Leone; Solomon Islands; Sri Lanka; Tajikistan; Tanzania; Timor-Leste; Togo; Tonga; Uganda; Uzbekistan; Viet Nam; Zambia\\
+Middle & Angola; Belarus; Belize; Botswana; Brazil; Bulgaria; Chile; Colombia; Congo, Rep.; Costa Rica; Croatia; Dominican Republic; Ecuador; Egypt, Arab Rep.; El Salvador; Estonia; Fiji; Guatemala; Iraq; Kazakhstan; Korea, Rep.; Latvia; Lebanon; Lithuania; Malaysia; Mauritania; Mauritius; Moldova; Morocco; Namibia; North Macedonia; Panama; Paraguay; Peru; Poland; Romania; Sao Tome and Principe; Serbia; Slovak Republic; South Africa; Syrian Arab Republic; Thailand; Tunisia; Turkiye; Turkmenistan; Ukraine; Uruguay; West Bank and Gaza; Zimbabwe\\
+High & Algeria; Argentina; Australia; Austria; Bahamas, The; Bahrain; Belgium; Brunei Darussalam; Canada; Cyprus; Czechia; Denmark; Finland; France; Gabon; Germany; Greece; Hong Kong SAR, China; Hungary; Iceland; Iran, Islamic Rep.; Ireland; Israel; Italy; Japan; Kuwait; Libya; Luxembourg; Malta; Mexico; Montenegro; Netherlands; New Zealand; Norway; Oman; Portugal; Qatar; Russian Federation; Saudi Arabia; Singapore; Slovenia; Spain; Sweden; Switzerland; United Arab Emirates; United Kingdom; United States\\
+%% END tables/countries
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+\paragraph{Implementation}
+The nuisance learners are LightGBM gradient-boosted trees \citep{ke2017lightgbm} with 15 leaves, a minimum of 20 observations per leaf (10 in the simulations), row and column subsampling of 80\% and a learning rate of 0.03; the random-forest check uses 400 trees \citep{breiman2001rf} with a minimum leaf size of 5 and half of the features at each split. The feature set contains the lagged controls, their country means (except for time-invariant variables), the country means of the treatment and the moderator, and the calendar year. Knots are placed at equally spaced quantiles of the moderator between its 0.5th and 99.5th percentiles, and values outside this range are assigned to the boundary. Simultaneous bands and sup-$t$ tests use 20,000 Gaussian draws. A full fit on the empirical sample (two nuisance functions, five folds, five repetitions) takes about 10 seconds on one CPU core, and re-estimating the final stage with another sieve takes a fraction of a second.
+
+\section{Additional results}\label{app:tables}
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Plasmode design: linear TWFE benchmarks.}\label{tab:plasmodetwfe}
+\scriptsize
+\begin{tabular}{lcccc}
+\toprule
+True $\theta$, estimator & Bias & RMSE & Coverage & Rejection\\
+\midrule
+%% BEGIN tables/plasmode_twfe.tex (generated by code/make_outputs.py)
+\multicolumn{5}{l}{\textit{Moderator: Schooling}}\\
+\quad no effect, TWFE-interaction & -0.52 & 0.75 & 0.97 (0.01) & 0.03 (0.01)\\
+\quad no effect, TWFE-spline & -0.35 & 1.12 & 0.98 (0.01) & 0.02 (0.01)\\
+\quad linear gradient, TWFE-interaction & -0.47 & 0.69 & 0.99 (0.01) & 1.00 (0.00)\\
+\quad linear gradient, TWFE-spline & -0.30 & 1.06 & 1.00 (0.00) & 1.00 (0.00)\\
+\quad threshold, TWFE-interaction & -0.69 & 0.85 & 0.98 (0.01) & 1.00 (0.00)\\
+\quad threshold, TWFE-spline & -0.22 & 1.04 & 1.00 (0.00) & 1.00 (0.00)\\
+\addlinespace
+\multicolumn{5}{l}{\textit{Moderator: Initial productivity}}\\
+\quad no effect, TWFE-interaction & 1.28 & 1.34 & 0.54 (0.04) & 0.47 (0.04)\\
+\quad no effect, TWFE-spline & 2.91 & 3.00 & 0.10 (0.02) & 0.91 (0.02)\\
+\quad linear gradient, TWFE-interaction & 1.28 & 1.35 & 0.53 (0.05) & 1.00 (0.00)\\
+\quad linear gradient, TWFE-spline & 2.93 & 3.03 & 0.13 (0.03) & 1.00 (0.00)\\
+\quad threshold, TWFE-interaction & 0.72 & 0.85 & 0.98 (0.01) & 1.00 (0.00)\\
+\quad threshold, TWFE-spline & 2.90 & 3.01 & 0.13 (0.03) & 1.00 (0.00)\\
+\addlinespace
+\multicolumn{5}{l}{\textit{Moderator: Years since take-off}}\\
+%% END tables/plasmode_twfe
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: see Table~\ref{tab:plasmode}. TWFE with a linear interaction or with additive spline controls and a spline in the moderator; tercile contrast only. Years since take-off is omitted from the linear benchmarks.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Penalty, identifying variation and treatment support.}\label{tab:diag}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & & & Residual & Residual share & Median $D$ & Within-country & Countries\\
+Specification & $\hat\lambda$ & edf & share & by tercile & by tercile & s.d.\ of $D$ & by tercile\\
+\midrule
+%% BEGIN tables/emp_diag.tex (generated by code/make_outputs.py)
+A: Baseline & 17.8 & 2.7 & 0.22 & 0.11 / 0.31 / 0.29 & 0.04 / 0.30 / 0.74 & 0.10 / 0.16 / 0.19 & 76 / 96 / 72\\
+A: Common sample & 1e+04 & 2.0 & 0.23 & 0.10 / 0.36 / 0.32 & 0.05 / 0.30 / 0.75 & 0.10 / 0.16 / 0.18 & 74 / 92 / 70\\
+B: Baseline & 1 & 4.1 & 0.22 & 0.14 / 0.35 / 0.23 & 0.07 / 0.31 / 0.68 & 0.17 / 0.26 / 0.31 & 53 / 49 / 47\\
+B: Common sample & 56.2 & 2.2 & 0.23 & 0.15 / 0.37 / 0.26 & 0.07 / 0.33 / 0.69 & 0.17 / 0.27 / 0.31 & 51 / 46 / 44\\
+C: Baseline & 0.0562 & 5.4 & 0.19 & 0.05 / 0.38 / 0.37 & 0.02 / 0.30 / 0.80 & 0.03 / 0.13 / 0.08 & 142 / 149 / 126\\
+%% END tables/emp_diag
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: $\hat\lambda$: cross-validated penalty (median over splits; $10^4$ is the upper end of the grid, an effectively linear fit); edf: effective degrees of freedom. ``Residual share'': variance of the two-way demeaned residual $D-\hat\mu$ relative to the variance of two-way demeaned $D$, overall and by tercile (low/middle/high) of the moderator. Countries by tercile can overlap for time-varying moderators.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\begin{threeparttable}
+\caption{Further robustness checks: schooling moderator.}\label{tab:empappa}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & Average & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP & Constancy\\
+\cmidrule(lr){3-5}
+Specification & (FE-DML) & Low & Middle & High & low & slope & test $p$\\
+\midrule
+%% BEGIN tables/emp_appendix_a.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{Panel A. Moderator: mean years of schooling}}\\
+\quad Original specification & $-0.60$ & $-2.08$ & $-0.95$ & $0.29$ & $2.37$ & $0.32$ & 0.48\\
+ & (1.14) & (2.25) & (1.21) & (1.43) & (2.85) & (0.39) & \\
+\quad Adding the investment share & $-2.56^{**}$ & $-0.92$ & $-2.38^{*}$ & $-3.25^{*}$ & $-2.34$ & $-0.34$ & 0.97\\
+ & (1.30) & (2.90) & (1.39) & (1.67) & (3.63) & (0.51) & \\
+\quad Adding mobile and broadband, no zero-filling$^{\dagger}$ & $-1.46$ & $-3.43$ & $-1.36$ & $2.22$ & $5.65^{*}$ & $0.63$ & 0.09\\
+ & (1.32) & (2.19) & (1.53) & (1.48) & (3.33) & (0.49) & \\
+\quad Treatment: composite ICT index & $-3.07^{*}$ & $-1.35$ & $-2.96^{*}$ & $-4.27^{**}$ & $-2.06$ & $-0.28$ & 0.98\\
+ & (1.57) & (3.74) & (1.77) & (1.74) & (4.48) & (0.61) & \\
+\quad Unpenalised sieve$^{\dagger}$ & $-2.92^{**}$ & $-1.43$ & $-3.19^{*}$ & $-2.12$ & $-0.83$ & $-0.36$ & 0.43\\
+ & (1.35) & (2.73) & (1.79) & (1.51) & (2.99) & (0.43) & \\
+\quad Three interior knots$^{\dagger}$ & $-2.92^{**}$ & $-1.99$ & $-2.92^{**}$ & $-3.35^{**}$ & $-1.07$ & $-0.19$ & 0.79\\
+ & (1.35) & (2.75) & (1.37) & (1.63) & (3.24) & (0.45) & \\
+\quad GCV penalty$^{\dagger}$ & $-2.92^{**}$ & $-1.81$ & $-2.86^{**}$ & $-3.03^{*}$ & $-1.22$ & $-0.19$ & 0.88\\
+ & (1.35) & (2.67) & (1.45) & (1.69) & (3.24) & (0.46) & \\
+\quad Two-year lag of internet$^{\dagger}$ & $-2.17^{*}$ & $-2.45$ & $-2.16$ & $-1.52$ & $1.17$ & $0.16$ & 0.79\\
+ & (1.28) & (3.29) & (1.50) & (1.48) & (4.04) & (0.55) & \\
+\quad Excluding 2020-2021$^{\dagger}$ & $-2.96^{**}$ & $-3.51$ & $-3.17^{**}$ & $-2.97^{*}$ & $0.50$ & $0.07$ & 1.00\\
+ & (1.29) & (3.10) & (1.42) & (1.65) & (3.79) & (0.51) & \\
+\quad Excluding 2025$^{\dagger}$ & $-3.46^{***}$ & $-2.11$ & $-3.38^{**}$ & $-4.10^{**}$ & $-1.83$ & $-0.26$ & 0.76\\
+ & (1.30) & (2.67) & (1.39) & (1.71) & (3.39) & (0.46) & \\
+\quad Untrimmed outcome$^{\dagger}$ & $-3.33^{**}$ & $-2.35$ & $-3.23^{**}$ & $-3.89^{*}$ & $-1.54$ & $-0.21$ & 0.72\\
+ & (1.49) & (3.12) & (1.53) & (2.01) & (4.05) & (0.55) & \\
+\quad Winsorised outcome$^{\dagger}$ & $-2.72^{**}$ & $-1.77$ & $-2.57^{*}$ & $-3.11^{*}$ & $-1.12$ & $-0.15$ & 0.78\\
+ & (1.32) & (2.90) & (1.39) & (1.69) & (3.64) & (0.49) & \\
+\quad Without data screening$^{\dagger}$ & $-2.75^{**}$ & $-2.91$ & $-2.79^{**}$ & $-2.53$ & $0.38$ & $0.05$ & 0.90\\
+ & (1.27) & (2.68) & (1.34) & (1.72) & (3.46) & (0.47) & \\
+\quad Excluding resource exporters$^{\dagger}$ & $-1.85$ & $-2.38$ & $-1.82$ & $-1.38$ & $1.32$ & $0.17$ & 0.94\\
+ & (1.39) & (2.64) & (1.43) & (2.00) & (3.37) & (0.45) & \\
+\quad High statistical capacity (SPI)$^{\dagger}$ & $-2.32^{*}$ & $-2.24$ & $-2.76^{**}$ & $-1.56$ & $0.44$ & $0.04$ & 0.85\\
+ & (1.35) & (2.58) & (1.37) & (1.97) & (3.38) & (0.64) & \\
+\quad Outcome: GDP per capita growth$^{\dagger}$ & $-2.75^{**}$ & $-2.94$ & $-2.66^{**}$ & $-3.54^{*}$ & $-0.95$ & $-0.13$ & 0.82\\
+ & (1.31) & (2.62) & (1.32) & (1.81) & (3.55) & (0.48) & \\
+\quad Population-weighted averages$^{\dagger}$ & $-2.92^{**}$ & $-1.99$ & $-2.92^{**}$ & $-3.34^{**}$ & $-1.06$ & $-0.19$ & 0.79\\
+ & (1.35) & (2.75) & (1.37) & (1.63) & (3.24) & (0.45) & \\
+\quad No Mundlak means$^{\dagger}$ & $-2.44^{**}$ & $-1.28$ & $-2.55^{**}$ & $-3.03^{**}$ & $-1.24$ & $-0.19$ & 0.85\\
+ & (1.09) & (1.94) & (1.11) & (1.42) & (2.46) & (0.33) & \\
+\quad WDI data, PWT 11.0 countries, 1996--2023$^{\dagger}$ & $-3.79^{***}$ & $-8.28^{***}$ & $-4.11^{***}$ & $-1.32$ & $6.97^{*}$ & $1.00^{*}$ & 0.09\\
+ & (1.32) & (3.09) & (1.35) & (1.74) & (3.73) & (0.54) & \\
+\quad Moderator: learning-adjusted schooling$^{\dagger}$ & $-2.94^{**}$ & $-3.14$ & $-2.99^{**}$ & $-2.64^{*}$ & $0.73$ & $0.13$ & 0.92\\
+ & (1.26) & (2.88) & (1.38) & (1.37) & (3.51) & (0.60) & \\
+\quad PWT 11.0, 1996--2019$^{\dagger}$ & $-1.48$ & $-7.47$ & $-0.81$ & $-0.96$ & $4.74$ & $7.62$ & 0.54\\
+ & (1.43) & (6.55) & (2.18) & (1.28) & (6.71) & (6.06) & \\
+\quad PWT 11.0: outcome TFP growth$^{\dagger}$ & $-2.80^{**}$ & $-10.50^{***}$ & $-3.08^{*}$ & $-1.57$ & $8.81^{*}$ & $7.63$ & 0.38\\
+ & (1.24) & (4.08) & (1.81) & (1.47) & (4.63) & (5.21) & \\
+%% END tables/emp_appendix_a
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: see Table~\ref{tab:emp}. $^{\dagger}$: three repetitions of the sample split. ``GCV penalty'' selects $\lambda$ by generalised cross-validation. ``Population-weighted averages'' changes only the weighting of the sample-average effect, which is reported in the text. ``No zero-filling'' leaves broadband missing before a country's first reported value instead of setting it to zero.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\begin{threeparttable}
+\caption{Further robustness checks: initial productivity and years since take-off.}\label{tab:empappbc}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & Average & \multicolumn{3}{c}{Tercile of moderator} & High $-$ & BLP & Constancy\\
+\cmidrule(lr){3-5}
+Specification & (FE-DML) & Low & Middle & High & low & slope & test $p$\\
+\midrule
+%% BEGIN tables/emp_appendix_bc.tex (generated by code/make_outputs.py)
+\multicolumn{8}{l}{\textit{Panel B. Moderator: initial log GDP per worker}}\\
+\quad Original specification & $-0.62$ & $-0.39$ & $-1.08$ & $-0.22$ & $0.91$ & $-0.32$ & 0.46\\
+ & (1.17) & (2.38) & (1.79) & (1.63) & (3.00) & (1.50) & \\
+\quad Adding the investment share & $-2.56^{**}$ & $-2.06$ & $-3.85^{**}$ & $-1.66$ & $0.50$ & $-0.29$ & 0.74\\
+ & (1.30) & (2.95) & (1.90) & (1.47) & (3.38) & (1.45) & \\
+\quad Adding mobile and broadband, no zero-filling$^{\dagger}$ & $-1.46$ & $-1.38$ & $-2.02$ & $-1.11$ & $0.44$ & $0.18$ & 0.49\\
+ & (1.32) & (2.03) & (2.19) & (1.96) & (2.80) & (1.32) & \\
+\quad Treatment: composite ICT index & $-3.07^{*}$ & $-5.52^{*}$ & $-4.97^{**}$ & $-0.23$ & $5.75$ & $2.30^{*}$ & 0.08\\
+ & (1.57) & (3.14) & (2.37) & (1.43) & (3.52) & (1.36) & \\
+\quad Unpenalised sieve$^{\dagger}$ & $-2.92^{**}$ & $-3.52$ & $-6.76^{***}$ & $0.82$ & $3.56$ & $1.69$ & 0.03\\
+ & (1.35) & (3.21) & (1.78) & (1.41) & (3.59) & (1.75) & \\
+\quad Three interior knots$^{\dagger}$ & $-2.92^{**}$ & $-0.98$ & $-5.29^{***}$ & $-1.17$ & $-0.28$ & $-0.49$ & 0.16\\
+ & (1.35) & (2.82) & (1.80) & (1.38) & (3.05) & (1.23) & \\
+\quad GCV penalty$^{\dagger}$ & $-2.92^{**}$ & $-1.94$ & $-6.33^{***}$ & $0.62$ & $0.24$ & $-0.31$ & 0.03\\
+ & (1.35) & (3.23) & (1.84) & (1.39) & (4.18) & (2.44) & \\
+\quad Two-year lag of internet$^{\dagger}$ & $-2.17^{*}$ & $-0.40$ & $-2.80^{*}$ & $-2.48^{*}$ & $-2.08$ & $-0.99$ & 0.62\\
+ & (1.28) & (2.92) & (1.70) & (1.37) & (3.35) & (1.33) & \\
+\quad Excluding 2020-2021$^{\dagger}$ & $-2.96^{**}$ & $-1.94$ & $-4.21^{***}$ & $-2.28^{*}$ & $-0.18$ & $-0.28$ & 0.15\\
+ & (1.29) & (2.52) & (1.63) & (1.35) & (2.97) & (1.16) & \\
+\quad Excluding 2025$^{\dagger}$ & $-3.46^{***}$ & $-1.66$ & $-4.58^{**}$ & $-3.23^{***}$ & $-1.42$ & $-0.84$ & 0.33\\
+ & (1.30) & (2.90) & (1.81) & (1.24) & (3.27) & (1.31) & \\
+\quad Untrimmed outcome$^{\dagger}$ & $-3.33^{**}$ & $-2.89$ & $-4.81^{**}$ & $-2.02^{*}$ & $0.87$ & $0.13$ & 0.14\\
+ & (1.49) & (3.32) & (1.87) & (1.08) & (3.54) & (1.42) & \\
+\quad Winsorised outcome$^{\dagger}$ & $-2.72^{**}$ & $-1.06$ & $-4.68^{***}$ & $-2.10^{*}$ & $-0.40$ & $-0.57$ & 0.15\\
+ & (1.32) & (2.92) & (1.69) & (1.26) & (3.24) & (1.31) & \\
+\quad Without data screening$^{\dagger}$ & $-2.75^{**}$ & $-1.83$ & $-4.56^{***}$ & $-1.29$ & $0.35$ & $-0.31$ & 0.25\\
+ & (1.27) & (2.70) & (1.76) & (1.37) & (3.05) & (1.22) & \\
+\quad Excluding resource exporters$^{\dagger}$ & $-1.85$ & $-1.26$ & $-2.27$ & $-0.46$ & $-0.71$ & $-0.42$ & 0.39\\
+ & (1.39) & (2.40) & (2.51) & (1.49) & (2.99) & (1.19) & \\
+\quad High statistical capacity (SPI)$^{\dagger}$ & $-2.32^{*}$ & $-3.12$ & $-2.62$ & $-0.38$ & $2.73$ & $0.52$ & 0.02\\
+ & (1.35) & (2.33) & (1.70) & (1.22) & (2.67) & (1.83) & \\
+\quad Outcome: GDP per capita growth$^{\dagger}$ & $-2.75^{**}$ & $-0.60$ & $-4.21^{**}$ & $-2.18$ & $-0.48$ & $-0.25$ & 0.65\\
+ & (1.31) & (2.75) & (1.71) & (1.90) & (3.30) & (1.46) & \\
+\quad Population-weighted averages$^{\dagger}$ & $-2.92^{**}$ & $-1.00$ & $-5.36^{***}$ & $-1.15$ & $-0.25$ & $-0.47$ & 0.15\\
+ & (1.35) & (2.80) & (1.80) & (1.38) & (3.06) & (1.24) & \\
+\quad No Mundlak means$^{\dagger}$ & $-2.44^{**}$ & $-0.13$ & $-5.51^{***}$ & $0.46$ & $0.77$ & $-1.10$ & $<$0.01\\
+ & (1.09) & (2.21) & (1.69) & (1.22) & (2.48) & (1.26) & \\
+\quad Moderator: distance to US frontier$^{\dagger}$ & $-2.00$ & $3.32$ & $-4.26^{**}$ & $-0.96$ & $-4.73$ & $-2.82^{*}$ & 0.16\\
+ & (1.25) & (2.79) & (1.99) & (1.14) & (2.97) & (1.48) & \\
+\quad Countries with pre-sample productivity only$^{\dagger}$ & $-2.76^{**}$ & $-1.84$ & $-4.12^{**}$ & $-1.74$ & $0.65$ & $-0.25$ & 0.36\\
+ & (1.28) & (2.71) & (1.66) & (1.49) & (2.95) & (1.27) & \\
+\quad PWT 11.0, 1996--2019$^{\dagger}$ & $-1.48$ & $-6.92$ & $-2.69$ & $0.62$ & $7.24$ & $3.23$ & 0.47\\
+ & (1.43) & (4.71) & (1.85) & (1.63) & (5.12) & (2.29) & \\
+\quad PWT 11.0: outcome TFP growth$^{\dagger}$ & $-2.80^{**}$ & $-6.41^{**}$ & $-4.00^{***}$ & $-1.37$ & $4.13$ & $1.85$ & 0.67\\
+ & (1.24) & (3.07) & (1.34) & (1.72) & (3.25) & (1.50) & \\
+\quad PWT 11.0, national-prices moderator$^{\dagger}$ & $-3.34^{***}$ & $-10.05^{***}$ & $-2.75^{**}$ & $-0.78$ & $9.28^{**}$ & $4.22^{**}$ & 0.06\\
+ & (1.29) & (3.12) & (1.37) & (1.35) & (3.78) & (1.74) & \\
+\quad PWT 10.0, national-prices moderator$^{\dagger}$ & $-1.74$ & $-10.70^{***}$ & $-2.85^{**}$ & $0.81$ & $11.50^{***}$ & $5.39^{***}$ & 0.03\\
+ & (1.60) & (3.66) & (1.36) & (1.62) & (4.24) & (1.86) & \\
+\addlinespace
+\multicolumn{8}{l}{\textit{Panel C. Moderator: years since internet take-off (share $\geq$ 10\%)}}\\
+\quad Pre-COVID sample, 1996--2019$^{\dagger}$ & $-1.94$ & $-9.49^{**}$ & $-4.28^{*}$ & $-0.58$ & $8.91^{*}$ & $0.44^{*}$ & 0.24\\
+ & (1.70) & (4.48) & (2.40) & (2.06) & (5.14) & (0.25) & \\
+\quad Adding mobile and broadband$^{\dagger}$ & $-1.42$ & $16.28$ & $-2.17$ & $-0.77$ & $-16.71$ & $-1.08^{*}$ & 0.05\\
+ & (1.44) & (11.23) & (1.83) & (1.59) & (11.34) & (0.58) & \\
+%% END tables/emp_appendix_bc
+\bottomrule
+\end{tabular}
+\begin{tablenotes}\scriptsize
+\item Notes: see Table~\ref{tab:emp}. $^{\dagger}$: three repetitions of the sample split. ``GCV penalty'' selects $\lambda$ by generalised cross-validation. ``Population-weighted averages'' changes only the weighting of the sample-average effect, which is reported in the text. ``No zero-filling'' leaves broadband missing before a country's first reported value instead of setting it to zero.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\clearpage
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+\end{document}

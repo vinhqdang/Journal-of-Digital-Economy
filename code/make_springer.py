@@ -9,6 +9,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "manuscript" / "main.tex"
+SUP = ROOT / "manuscript" / "supplement.tex"
 OUT = ROOT / "manuscript" / "springer" / "main_sn.tex"
 
 PREAMBLE = r"""\documentclass[pdflatex,sn-basic]{sn-jnl}% Springer Nature author-year reference style
@@ -37,6 +38,9 @@ PREAMBLE = r"""\documentclass[pdflatex,sn-basic]{sn-jnl}% Springer Nature author
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\M}{\mathcal{M}}
 \DeclareMathOperator*{\argmin}{arg\,min}
+\input{../tables/numbers.tex}
+\newif\ifblind
+\newcommand{\externaldocument}[1]{}
 % Keep the sn-jnl table fonts but drop its automatic threeparttable wrapper,
 % so that wide tables can be scaled to the text width.
 \renewenvironment{table}[1][]{\begin{tableorg}[#1]\centering\tablebodyfont}{\end{tableorg}}
@@ -78,8 +82,10 @@ def main():
     jel = ", ".join(k.strip() for k in jel.split(r"\sep"))
 
     body = tex.split(r"\end{frontmatter}", 1)[1]
-    main_part, rest = body.split(r"\bibliographystyle{elsarticle-harv}", 1)
-    appendix = rest.split(r"\appendix", 1)[1].rsplit(r"\end{document}", 1)[0]
+    main_part = body.split(r"\bibliographystyle{elsarticle-harv}", 1)[0]
+    sup = SUP.read_text()
+    appendix = sup.split(r"\appendix", 1)[1].split(r"\bibliographystyle{elsarticle-harv}", 1)[0]
+    main_part = main_part.replace("The supplementary material contains", "The appendices contain")
 
     # Declarations in the Springer Nature format.
     main_part, decl = main_part.split(r"\section*{Data and code availability}", 1)
@@ -99,6 +105,11 @@ def main():
     fit = lambda t: re.sub(r"(\\begin\{threeparttable\}.*?\\end\{threeparttable\})",
                            r"\\adjustbox{max width=\\linewidth}{%\n\1}", t, flags=re.S)
     main_part, appendix = fit(main_part), fit(appendix)
+    # the journal-specific references of the KeAi version
+    main_part = main_part.replace("Recent contributions to this journal",
+                                  r"Recent contributions to the \textit{Journal of Digital Economy}")
+    main_part = main_part.replace("increasingly used in this journal",
+                                  r"increasingly used in the \textit{Journal of Digital Economy}")
     main_part = main_part.replace(r"(\ref{app:", r"(Appendix~\ref{app:")
     out = (head + main_part.rstrip() + "\n\n" + decl + "\n"
            + "\\begin{appendices}\n" + appendix.strip() + "\n\\end{appendices}\n\n"

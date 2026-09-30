@@ -7,7 +7,9 @@ in Z for the effect), FE-DML (constant effect), tuned boosted R-learner on the F
 within-group DML sieve (nuisance learned on two-way demeaned data, in the spirit of Clarke and
 Polselli), pooled DML sieve (no Mundlak features, no within step), two one-at-a-time ablations
 (Mundlak features only; within step only), Panel-DOSE unpenalised and penalised, and an oracle
-version of Panel-DOSE that uses the true nuisance functions (diagnostic only).
+version of Panel-DOSE that uses latent information unavailable to any feasible estimator: the
+conditional means of D and Y given the controls *and* the true country and year effects
+(diagnostic benchmark only).
 """
 import copy
 import sys
@@ -186,7 +188,8 @@ def dose_report(m):
     out["blp"], out["blp_se"] = m.blp_slope()
     out["lambda"], out["edf"] = m.lambda_, m.edf_
     if m.K_ > 1:
-        out["p_const"] = m.shape_tests()["const"][1]
+        st = m.shape_tests()
+        out["p_const"], out["p_lin"] = st["const"][1], st["lin"][1]
     return out
 
 
@@ -243,7 +246,7 @@ def one_rep(shape, rep, N, T, rho, full=True):
         if "se" in r:
             row["cover"] = float(np.mean(np.abs(e - truth) <= 1.96 * r["se"]))
             row["ucover"] = float(np.all((truth >= r["ulo"]) & (truth <= r["uhi"])))
-        for k in ["lambda", "edf", "p_const"]:
+        for k in ["lambda", "edf", "p_const", "p_lin"]:
             if k in r:
                 row[k] = r[k]
         out.append(row)

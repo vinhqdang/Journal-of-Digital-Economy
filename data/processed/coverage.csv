@@ -74,7 +74,7 @@ GIB,Gibraltar,High income,False
 GIN,Guinea,Lower middle income,True
 GMB,"Gambia, The",Low income,True
 GNB,Guinea-Bissau,Low income,True
-GNQ,Equatorial Guinea,Upper middle income,False
+GNQ,Equatorial Guinea,Upper middle income,True
 GRC,Greece,High income,True
 GRD,Grenada,Upper middle income,False
 GRL,Greenland,High income,False
@@ -91,7 +91,7 @@ IMN,Isle of Man,High income,False
 IND,India,Lower middle income,True
 IRL,Ireland,High income,True
 IRN,"Iran, Islamic Rep.",Upper middle income,True
-IRQ,Iraq,Upper middle income,False
+IRQ,Iraq,Upper middle income,True
 ISL,Iceland,High income,True
 ISR,Israel,High income,True
 ITA,Italy,High income,True
@@ -107,9 +107,9 @@ KNA,St. Kitts and Nevis,High income,False
 KOR,"Korea, Rep.",High income,True
 KWT,Kuwait,High income,True
 LAO,Lao PDR,Lower middle income,True
-LBN,Lebanon,Lower middle income,False
+LBN,Lebanon,Lower middle income,True
 LBR,Liberia,Low income,False
-LBY,Libya,Upper middle income,False
+LBY,Libya,Upper middle income,True
 LCA,St. Lucia,Upper middle income,False
 LIE,Liechtenstein,High income,False
 LKA,Sri Lanka,Upper middle income,True
@@ -160,7 +160,7 @@ PRI,Puerto Rico (US),High income,False
 PRK,"Korea, Dem. People's Rep.",Low income,False
 PRT,Portugal,High income,True
 PRY,Paraguay,Upper middle income,True
-PSE,West Bank and Gaza,Lower middle income,False
+PSE,West Bank and Gaza,Lower middle income,True
 PYF,French Polynesia,High income,False
 QAT,Qatar,High income,True
 ROU,Romania,High income,True
@@ -185,14 +185,14 @@ SWE,Sweden,High income,True
 SWZ,Eswatini,Lower middle income,False
 SXM,Sint Maarten (Dutch part),High income,False
 SYC,Seychelles,High income,False
-SYR,Syrian Arab Republic,Low income,False
+SYR,Syrian Arab Republic,Low income,True
 TCA,Turks and Caicos Islands,High income,False
 TCD,Chad,Low income,True
 TGO,Togo,Lower middle income,True
 THA,Thailand,Upper middle income,True
 TJK,Tajikistan,Lower middle income,True
-TKM,Turkmenistan,Upper middle income,False
-TLS,Timor-Leste,Lower middle income,False
+TKM,Turkmenistan,Upper middle income,True
+TLS,Timor-Leste,Lower middle income,True
 TON,Tonga,Upper middle income,True
 TTO,Trinidad and Tobago,High income,False
 TUN,Tunisia,Lower middle income,True
